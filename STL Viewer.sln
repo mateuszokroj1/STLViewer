@@ -1,0 +1,31 @@
+﻿
+Microsoft Visual Studio Solution File, Format Version 12.00
+# Visual Studio 14
+VisualStudioVersion = 14.0.25420.1
+MinimumVisualStudioVersion = 10.0.40219.1
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "StlLibrary", "StlLibrary\StlLibrary.csproj", "{DD84580D-E7D9-42C1-99FA-EA636899166A}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "STL Viewer", "STL Viewer\STL Viewer.csproj", "{2C8CC5DC-AC4B-44A5-BE1B-A7A8577B3008}"
+	ProjectSection(ProjectDependencies) = postProject
+		{DD84580D-E7D9-42C1-99FA-EA636899166A} = {DD84580D-E7D9-42C1-99FA-EA636899166A}
+	EndProjectSection
+EndProject
+Global
+	GlobalSection(SolutionConfigurationPlatforms) = preSolution
+		Debug|Any CPU = Debug|Any CPU
+		Release|Any CPU = Release|Any CPU
+	EndGlobalSection
+	GlobalSection(ProjectConfigurationPlatforms) = postSolution
+		{DD84580D-E7D9-42C1-99FA-EA636899166A}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{DD84580D-E7D9-42C1-99FA-EA636899166A}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{DD84580D-E7D9-42C1-99FA-EA636899166A}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{DD84580D-E7D9-42C1-99FA-EA636899166A}.Release|Any CPU.Build.0 = Release|Any CPU
+		{2C8CC5DC-AC4B-44A5-BE1B-A7A8577B3008}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{2C8CC5DC-AC4B-44A5-BE1B-A7A8577B3008}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{2C8CC5DC-AC4B-44A5-BE1B-A7A8577B3008}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{2C8CC5DC-AC4B-44A5-BE1B-A7A8577B3008}.Release|Any CPU.Build.0 = Release|Any CPU
+	EndGlobalSection
+	GlobalSection(SolutionProperties) = preSolution
+		HideSolutionNode = FALSE
+	EndGlobalSection
+EndGlobal
