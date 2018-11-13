@@ -12,6 +12,7 @@ namespace StlLibrary
     /// </summary>
     public abstract class StlFile
     {
-
+        public string Header { get; set; }
+        public List<Triangle> Triangles { get; set; } = new List<Triangle>();
     }
 }
