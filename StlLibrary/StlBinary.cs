@@ -10,7 +10,9 @@ namespace StlLibrary
 {
     public class StlBinary : StlFile
     {
-        public StlBinary(FileStream file)
+        public StlBinary() { }
+
+        public void Load(FileStream file)
         {
             if(file == null) throw new ArgumentNullException();
             if (!file.CanRead || file.Length < 84) throw new ArgumentException("Nieprawidłowy format");
@@ -54,6 +56,11 @@ namespace StlLibrary
                         Argument = reader.ReadUInt16()
                     });
             }
+
+            public Task LoadAsync()
+        {
+
+        }
         }
     }
 }
