@@ -16,6 +16,7 @@ namespace StlLibrary
         public List<Triangle> Triangles { get; set; } = new List<Triangle>();
     }
 
+    [Serializable]
     public class StlFileException : ApplicationException
     {
         public StlFileException() : base("StlFileException") { }
