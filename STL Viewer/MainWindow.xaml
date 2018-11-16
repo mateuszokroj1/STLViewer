@@ -1,17 +1,22 @@
-﻿<Custom:RibbonWindow
+﻿<Window
         xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
         xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
         xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
         xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+        xmlns:sharpGL="clr-namespace:SharpGL.WPF;assembly=SharpGL.WPF"
         xmlns:local="clr-namespace:STL_Viewer"
-        xmlns:Custom="http://schemas.microsoft.com/winfx/2006/xaml/presentation/ribbon" x:Class="STL_Viewer.MainWindow"
+        x:Class="STL_Viewer.MainWindow"
         mc:Ignorable="d"
-        Title="MainWindow" Height="350" Width="525" WindowState="Maximized">
+        Title="STL Viewer" Height="392" Width="525" WindowState="Maximized">
+    <Window.TaskbarItemInfo>
+        <TaskbarItemInfo x:Name="taskbar" />
+    </Window.TaskbarItemInfo>
     <Grid>
-
-        <Custom:Ribbon Margin="0" VerticalAlignment="Top" Height="110">
-            <Custom:RibbonTab Header="Tab"/>
-        </Custom:Ribbon>
-
+        <sharpGL:OpenGLControl x:Name="opengl" OpenGLVersion="OpenGL4_0" FrameRate="25" Cursor="Hand" Foreground="{x:Null}" OpenGLDraw="opengl_OpenGLDraw" />
+        <ToolBar Height="25" Width="175" HorizontalAlignment="Center" VerticalAlignment="Top" Margin="0,5,0,0" Panel.ZIndex="1">
+            <Button Content="Otwórz STL..." Click="Button_Click"/>
+            <Separator/>
+            <CheckBox Content="Pełny ekran" Click="CheckBox_Click"/>
+        </ToolBar>
     </Grid>
-</Custom:RibbonWindow>
+</Window>

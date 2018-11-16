@@ -81,8 +81,8 @@ namespace StlLibrary
                 triangles[i] = newtri;
                 i++;
             }
-            this.Triangles.Clear();
-            this.Triangles.AddRange(triangles);
+            this.Triangles = triangles;
+            this.IsLoaded = true;
         }
 
         public Task LoadAsync(FileStream file, Progress progressinfo)
@@ -126,7 +126,6 @@ namespace StlLibrary
                 foreach (Match facet in facets)
                 {
                     if (progressinfo.Cancel) return;
-                    progressinfo.SetCurrent(i);
                     Triangle newtri = new Triangle();
                     newtri.Normal = new Point3D
                     {
@@ -158,9 +157,10 @@ namespace StlLibrary
 
                     triangles[i] = newtri;
                     i++;
+                    progressinfo.SetCurrent(i);
                 }
-                this.Triangles.Clear();
-                this.Triangles.AddRange(triangles);
+                this.Triangles = triangles;
+                this.IsLoaded = true;
             });
         }
     }
