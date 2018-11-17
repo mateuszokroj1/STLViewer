@@ -5,18 +5,64 @@
         xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
         xmlns:sharpGL="clr-namespace:SharpGL.WPF;assembly=SharpGL.WPF"
         xmlns:local="clr-namespace:STL_Viewer"
+        xmlns:ei="http://schemas.microsoft.com/expression/2010/interactions" x:Name="window"
         x:Class="STL_Viewer.MainWindow"
         mc:Ignorable="d"
-        Title="STL Viewer" Height="392" Width="525" WindowState="Maximized">
+        Title="STL Viewer" Height="392" Width="525" Loaded="Window_Loaded" MouseMove="window_MouseMove" Closing="window_Closing" SizeChanged="window_SizeChanged">
     <Window.TaskbarItemInfo>
         <TaskbarItemInfo x:Name="taskbar" />
     </Window.TaskbarItemInfo>
     <Grid>
-        <sharpGL:OpenGLControl x:Name="opengl" OpenGLVersion="OpenGL4_0" FrameRate="25" Cursor="Hand" Foreground="{x:Null}" OpenGLDraw="opengl_OpenGLDraw" />
-        <ToolBar Height="25" Width="175" HorizontalAlignment="Center" VerticalAlignment="Top" Margin="0,5,0,0" Panel.ZIndex="1">
+        <VisualStateManager.VisualStateGroups>
+            <VisualStateGroup x:Name="Dimming">
+                <VisualStateGroup.Transitions>
+                    <VisualTransition GeneratedDuration="0:0:1"/>
+                    <VisualTransition From="Dimming1" GeneratedDuration="0:0:2" To="Dimming2">
+                        <VisualTransition.GeneratedEasingFunction>
+                            <ExponentialEase EasingMode="EaseInOut"/>
+                        </VisualTransition.GeneratedEasingFunction>
+                    </VisualTransition>
+                    <VisualTransition GeneratedDuration="0:0:2" To="Dimming1">
+                        <VisualTransition.GeneratedEasingFunction>
+                            <CubicEase EasingMode="EaseInOut"/>
+                        </VisualTransition.GeneratedEasingFunction>
+                    </VisualTransition>
+                </VisualStateGroup.Transitions>
+                <VisualState x:Name="Dimming1">
+                    <Storyboard>
+                        <DoubleAnimationUsingKeyFrames Storyboard.TargetProperty="(UIElement.Opacity)" Storyboard.TargetName="toolBar">
+                            <EasingDoubleKeyFrame KeyTime="0" Value="0.3"/>
+                        </DoubleAnimationUsingKeyFrames>
+                    </Storyboard>
+                </VisualState>
+                <VisualState x:Name="Dimming2">
+                    <Storyboard>
+                        <DoubleAnimationUsingKeyFrames Storyboard.TargetProperty="(UIElement.Opacity)" Storyboard.TargetName="toolBar">
+                            <EasingDoubleKeyFrame KeyTime="0" Value="0.1"/>
+                        </DoubleAnimationUsingKeyFrames>
+                        <ObjectAnimationUsingKeyFrames Storyboard.TargetProperty="(FrameworkElement.Cursor)" Storyboard.TargetName="opengl">
+                            <DiscreteObjectKeyFrame KeyTime="0">
+                                <DiscreteObjectKeyFrame.Value>
+                                    <Cursor>No</Cursor>
+                                </DiscreteObjectKeyFrame.Value>
+                            </DiscreteObjectKeyFrame>
+                        </ObjectAnimationUsingKeyFrames>
+                        <ObjectAnimationUsingKeyFrames Storyboard.TargetProperty="(FrameworkElement.Cursor)" Storyboard.TargetName="window">
+                            <DiscreteObjectKeyFrame KeyTime="0">
+                                <DiscreteObjectKeyFrame.Value>
+                                    <Cursor>None</Cursor>
+                                </DiscreteObjectKeyFrame.Value>
+                            </DiscreteObjectKeyFrame>
+                        </ObjectAnimationUsingKeyFrames>
+                    </Storyboard>
+                </VisualState>
+            </VisualStateGroup>
+        </VisualStateManager.VisualStateGroups>
+        <sharpGL:OpenGLControl x:Name="opengl" OpenGLVersion="OpenGL4_0" FrameRate="25" Cursor="Cross" Foreground="{x:Null}" OpenGLDraw="opengl_OpenGLDraw" />
+        <ToolBar x:Name="toolBar" Height="25" Width="175" HorizontalAlignment="Center" VerticalAlignment="Top" Margin="0,5,0,0" Panel.ZIndex="1" DragEnter="toolBar_DragEnter">
             <Button Content="Otwórz STL..." Click="Button_Click"/>
             <Separator/>
-            <CheckBox Content="Pełny ekran" Click="CheckBox_Click"/>
+            <CheckBox x:Name="fullscreen" Content="Pełny ekran" Click="CheckBox_Click"/>
         </ToolBar>
     </Grid>
 </Window>
