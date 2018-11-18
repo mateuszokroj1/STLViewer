@@ -11,7 +11,7 @@
             <RowDefinition Height="60*"/>
             <RowDefinition Height="20*"/>
         </Grid.RowDefinitions>
-        <ProgressBar HorizontalAlignment="Left" Height="20" Margin="50,40,0,0" VerticalAlignment="Top" Width="80"/>
-        <Button Content="Button" HorizontalAlignment="Left" Margin="80,0,0,0" VerticalAlignment="Top" Width="75" Grid.Row="1"/>
+        <ProgressBar x:Name="Progress" HorizontalAlignment="Center" Height="20" Margin="0" VerticalAlignment="Center" Width="180"/>
+        <Button Content="Anuluj" HorizontalAlignment="Left" Margin="30,0,0,0" VerticalAlignment="Center" Width="75" Grid.Row="1" IsDefault="True" IsCancel="True"/>
     </Grid>
 </Window>

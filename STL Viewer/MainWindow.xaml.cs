@@ -29,6 +29,7 @@ namespace STL_Viewer
         private FileStream file = null;
         private StlLibrary.StlFile stl = null;
         private Timer dimming1, dimming2;
+        private OpenFileDialog dialog = new OpenFileDialog();
 
         public MainWindow()
         {
@@ -44,7 +45,7 @@ namespace STL_Viewer
                 {
                     this.toolBar.Visibility = Visibility.Hidden;
                     dimming1.Stop();
-                    if (this.fullscreen.IsChecked.GetValueOrDefault(false))
+                    if (this.fullscreen.IsChecked ?? false)
                         dimming2.Start();
                 });
             };
@@ -64,7 +65,50 @@ namespace STL_Viewer
 
         private void Button_Click(object sender, RoutedEventArgs e)
         {
-            OpenFileDialog dialog = new Microsoft.Win32.OpenFileDialog();
+            dialog.CheckFileExists = true;
+            dialog.DefaultExt = "stl";
+            dialog.InitialDirectory = Environment.GetFolderPath(Environment.SpecialFolder.MyDocuments);
+            dialog.Multiselect = false;
+            dialog.Title = "Otwórz plik STL";
+            dialog.Filter = "Stereolithography 3D Model (STL)|*.stl";
+            if (!dialog.ShowDialog(this) ?? false || dialog.FileNames.Length < 1 || !File.Exists(dialog.FileName)) return;
+            try { file = new FileStream(dialog.FileName, FileMode.Open, FileAccess.Read, FileShare.Read); }
+            catch(IOException exc) { MessageBox.Show($"Wystąpił błąd podczas odczytu pliku: {exc.Message}", "Błąd odczytu", MessageBoxButton.OK, MessageBoxImage.Error); file = null; }
+            if(!file.CanRead) { MessageBox.Show("Pliku nie można odczytać", "Błąd odczytu", MessageBoxButton.OK, MessageBoxImage.Error); file = null; }
+            bool ascii = true;
+            for (uint i = 0; i < file.Length; i++)
+                if(file.ReadByte() > 128)
+                {
+                    ascii = false;
+                    break;
+                }
+
+            if(ascii)
+            {
+                this.stl = new StlAscii();
+                Progress progress = new Progress();
+                Loading loading = new Loading(progress);
+                (this.stl as StlAscii).LoadAsync(this.file, progress);
+                if(loading.ShowDialog() ?? false)
+                {
+                    this.file?.Close();
+                    this.file = null;
+                    this.stl = null;
+                }
+            }
+            else
+            {
+                this.stl = new StlBinary();
+                Progress progress = new Progress();
+                Loading loading = new Loading(progress);
+                (this.stl as StlAscii).LoadAsync(this.file, progress);
+                if (loading.ShowDialog() ?? false)
+                {
+                    this.file?.Close();
+                    this.file = null;
+                    this.stl = null;
+                }
+            }
         }
 
         private void window_MouseMove(object sender, MouseEventArgs e)
@@ -79,7 +123,7 @@ namespace STL_Viewer
 
         private void CheckBox_Click(object sender, RoutedEventArgs e)
         {
-            if((sender as CheckBox).IsChecked.GetValueOrDefault(false)) // Full screen
+            if((sender as CheckBox).IsChecked ?? false) // Full screen
             {
                 this.ResizeMode = ResizeMode.NoResize;
                 this.WindowState = WindowState.Normal;
@@ -101,6 +145,7 @@ namespace STL_Viewer
 
         private void opengl_OpenGLDraw(object sender, SharpGL.SceneGraph.OpenGLEventArgs args)
         {
+            if (!this.IsFocused || !this.IsActive) return;
             OpenGL gl = args.OpenGL;
             gl.Clear(OpenGL.GL_COLOR_BUFFER_BIT | OpenGL.GL_DEPTH_BUFFER_BIT);
             gl.LoadIdentity();
@@ -122,9 +167,9 @@ namespace STL_Viewer
 
                 foreach (Triangle tri in stl.Triangles)
                 {
-                    gl.Vertex4d(tri.Vertex1.X, tri.Vertex1.Y, tri.Vertex1.Z, 0);
-                    gl.Vertex4d(tri.Vertex2.X, tri.Vertex2.Y, tri.Vertex2.Z, 0);
-                    gl.Vertex4d(tri.Vertex3.X, tri.Vertex3.Y, tri.Vertex3.Z, 0);
+                    gl.Vertex4d(tri.Vertex1.X, tri.Vertex1.Y, tri.Vertex1.Z, 1);
+                    gl.Vertex4d(tri.Vertex2.X, tri.Vertex2.Y, tri.Vertex2.Z, 1);
+                    gl.Vertex4d(tri.Vertex3.X, tri.Vertex3.Y, tri.Vertex3.Z, 1);
                 }
 
                 gl.End();
@@ -132,24 +177,13 @@ namespace STL_Viewer
             gl.Flush();
         }
 
-        private void toolBar_DragEnter(object sender, DragEventArgs e)
-        {
-            this.toolBar.
-        }
-
-        private void window_SizeChanged(object sender, SizeChangedEventArgs e)
-        {
-            if((e.PreviousSize.Height > e.NewSize.Height) || (e.PreviousSize.Width > e.NewSize.Width))
-            {
-                this.toolBar
-            }
-        }
-
         private void window_Closing(object sender, System.ComponentModel.CancelEventArgs e)
         {
+            this.stl = null;
             this.file?.Close();
             this.dimming1?.Close();
             this.dimming2?.Close();
+            GC.Collect();
         }
     }
 }

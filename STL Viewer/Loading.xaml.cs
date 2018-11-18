@@ -19,9 +19,11 @@ namespace STL_Viewer
     /// </summary>
     public partial class Loading : Window
     {
-        public Loading()
+        private StlLibrary.Progress Info;
+        public Loading(StlLibrary.Progress progressinfo)
         {
             InitializeComponent();
+            Info = progressinfo;
         }
     }
 }

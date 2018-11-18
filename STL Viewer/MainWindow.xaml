@@ -8,7 +8,7 @@
         xmlns:ei="http://schemas.microsoft.com/expression/2010/interactions" x:Name="window"
         x:Class="STL_Viewer.MainWindow"
         mc:Ignorable="d"
-        Title="STL Viewer" Height="392" Width="525" Loaded="Window_Loaded" MouseMove="window_MouseMove" Closing="window_Closing" SizeChanged="window_SizeChanged">
+        Title="STL Viewer" Height="392" Width="525" Loaded="Window_Loaded" MouseMove="window_MouseMove" Closing="window_Closing">
     <Window.TaskbarItemInfo>
         <TaskbarItemInfo x:Name="taskbar" />
     </Window.TaskbarItemInfo>
@@ -59,7 +59,7 @@
             </VisualStateGroup>
         </VisualStateManager.VisualStateGroups>
         <sharpGL:OpenGLControl x:Name="opengl" OpenGLVersion="OpenGL4_0" FrameRate="25" Cursor="Cross" Foreground="{x:Null}" OpenGLDraw="opengl_OpenGLDraw" />
-        <ToolBar x:Name="toolBar" Height="25" Width="175" HorizontalAlignment="Center" VerticalAlignment="Top" Margin="0,5,0,0" Panel.ZIndex="1" DragEnter="toolBar_DragEnter">
+        <ToolBar x:Name="toolBar" Height="25" Width="175" HorizontalAlignment="Center" VerticalAlignment="Top" Margin="0,5,0,0" Panel.ZIndex="1" IsHitTestVisible="False">
             <Button Content="Otwórz STL..." Click="Button_Click"/>
             <Separator/>
             <CheckBox x:Name="fullscreen" Content="Pełny ekran" Click="CheckBox_Click"/>
