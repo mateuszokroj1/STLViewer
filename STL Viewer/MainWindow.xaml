@@ -59,7 +59,7 @@
             </VisualStateGroup>
         </VisualStateManager.VisualStateGroups>
         <sharpGL:OpenGLControl x:Name="opengl" OpenGLVersion="OpenGL4_0" FrameRate="25" Cursor="Cross" Foreground="{x:Null}" OpenGLDraw="opengl_OpenGLDraw" />
-        <ToolBar x:Name="toolBar" Height="25" Width="175" HorizontalAlignment="Center" VerticalAlignment="Top" Margin="0,5,0,0" Panel.ZIndex="1" IsHitTestVisible="False">
+        <ToolBar x:Name="toolBar" Height="25" Width="175" HorizontalAlignment="Center" VerticalAlignment="Top" Margin="0,5,0,0" Panel.ZIndex="100" IsHitTestVisible="False">
             <Button Content="Otwórz STL..." Click="Button_Click"/>
             <Separator/>
             <CheckBox x:Name="fullscreen" Content="Pełny ekran" Click="CheckBox_Click"/>

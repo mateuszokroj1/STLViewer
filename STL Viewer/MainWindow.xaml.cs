@@ -1,19 +1,10 @@
 ﻿using System;
-using System.Collections.Generic;
 using System.Linq;
 using System.IO;
-using System.Text;
 using System.Timers;
-using System.Threading.Tasks;
 using System.Windows;
 using System.Windows.Controls;
-using System.Windows.Data;
-using System.Windows.Documents;
 using System.Windows.Input;
-using System.Windows.Media;
-using System.Windows.Media.Imaging;
-using System.Windows.Navigation;
-using System.Windows.Shapes;
 using Microsoft.Win32;
 
 using SharpGL;
@@ -24,7 +15,7 @@ namespace STL_Viewer
     /// <summary>
     /// Logika interakcji dla klasy MainWindow.xaml
     /// </summary>
-    public partial class MainWindow : Window
+    public partial class MainWindow : Window, IDisposable
     {
         private FileStream file = null;
         private StlLibrary.StlFile stl = null;
@@ -56,7 +47,6 @@ namespace STL_Viewer
                 this.Dispatcher.Invoke(() =>
                 {
                     this.toolBar.Visibility = Visibility.Hidden;
-                    this.opengl.ForceCursor = true;
                     this.opengl.Cursor = Cursors.None;
                     dimming2.Stop();
                 });
@@ -116,7 +106,6 @@ namespace STL_Viewer
             dimming1.Stop();
             dimming2.Stop();
             this.toolBar.Visibility = Visibility.Visible;
-            this.opengl.ForceCursor = false;
             this.opengl.Cursor = Cursors.Cross;
             dimming1.Start();
         }
@@ -152,10 +141,16 @@ namespace STL_Viewer
 
             gl.Color(0, 0, 0);
             gl.Begin(OpenGL.GL_QUADS);
-            gl.Vertex(0, 0);
-            gl.Vertex(opengl.Width, 0);
-            gl.Vertex(0, opengl.Height);
-            gl.Vertex(opengl.Width, opengl.Height);
+                gl.Vertex(0, 0);
+                gl.Vertex(opengl.Width, 0);
+                gl.Vertex(0, opengl.Height);
+                gl.Vertex(opengl.Width, opengl.Height);
+            gl.End();
+            gl.Color((byte)255,(byte)255,(byte)255);
+            gl.Begin(OpenGL.GL_TRIANGLES);
+                gl.Vertex(opengl.Width/2,0);
+                gl.Vertex(opengl.Width,opengl.Height);
+                gl.Vertex(0,opengl.Height);
             gl.End();
 
             if (file != null && stl != null && stl.IsLoaded && stl.Triangles.Count() > 0)
@@ -179,11 +174,37 @@ namespace STL_Viewer
 
         private void window_Closing(object sender, System.ComponentModel.CancelEventArgs e)
         {
-            this.stl = null;
-            this.file?.Close();
-            this.dimming1?.Close();
-            this.dimming2?.Close();
-            GC.Collect();
+            this.opengl.OpenGLDraw -= this.opengl_OpenGLDraw;
+            this.Dispose(true);
         }
+
+        #region IDisposable Support
+        private bool disposedValue = false; // Aby wykryć nadmiarowe wywołania
+
+        protected virtual void Dispose(bool disposing)
+        {
+            if (!disposedValue)
+            {
+                if (disposing)
+                {
+                    if (file != null && file.CanRead) file.Close();
+                    this.stl = null;
+                    this.dialog = null;
+                    this.dimming1.Close();
+                    this.dimming1 = null;
+                    this.dimming2.Close();
+                    this.dimming2 = null;
+                }
+
+                GC.Collect();
+                disposedValue = true;
+            }
+        }
+
+        public void Dispose()
+        {
+            Dispose(true);
+        }
+        #endregion
     }
 }
