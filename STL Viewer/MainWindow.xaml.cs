@@ -18,8 +18,9 @@ namespace STL_Viewer
     public partial class MainWindow : Window, IDisposable
     {
         private FileStream file = null;
-        private StlLibrary.StlFile stl = null;
+        private StlFile stl = null;
         private Timer dimming1, dimming2;
+        private DimState state;
         private OpenFileDialog dialog = new OpenFileDialog();
 
         public MainWindow()
@@ -29,6 +30,7 @@ namespace STL_Viewer
 
         private void Window_Loaded(object sender, RoutedEventArgs e)
         {
+            state = DimState.Default;
             dimming1 = new Timer(4000);
             dimming1.Elapsed += (obj, ev) =>
             {
@@ -36,6 +38,7 @@ namespace STL_Viewer
                 {
                     this.toolBar.Visibility = Visibility.Hidden;
                     dimming1.Stop();
+                    this.state = DimState.Dimmed1;
                     if (this.fullscreen.IsChecked ?? false)
                         dimming2.Start();
                 });
@@ -48,10 +51,12 @@ namespace STL_Viewer
                 {
                     this.toolBar.Visibility = Visibility.Hidden;
                     this.opengl.Cursor = Cursors.None;
+                    this.state = DimState.Dimmed2;
                     dimming2.Stop();
                 });
             };
         }
+
 
         private void Button_Click(object sender, RoutedEventArgs e)
         {
@@ -91,7 +96,7 @@ namespace STL_Viewer
                 this.stl = new StlBinary();
                 Progress progress = new Progress();
                 Loading loading = new Loading(progress);
-                (this.stl as StlAscii).LoadAsync(this.file, progress);
+                (this.stl as StlBinary).LoadAsync(this.file, progress);
                 if (loading.ShowDialog() ?? false)
                 {
                     this.file?.Close();
@@ -101,13 +106,19 @@ namespace STL_Viewer
             }
         }
 
+        private void Loading()
+        {
+
+        }
+
         private void window_MouseMove(object sender, MouseEventArgs e)
         {
             dimming1.Stop();
             dimming2.Stop();
+            dimming1.Start();
+            if (this.state == DimState.Default) return;
             this.toolBar.Visibility = Visibility.Visible;
             this.opengl.Cursor = Cursors.Cross;
-            dimming1.Start();
         }
 
         private void CheckBox_Click(object sender, RoutedEventArgs e)
@@ -134,7 +145,7 @@ namespace STL_Viewer
 
         private void opengl_OpenGLDraw(object sender, SharpGL.SceneGraph.OpenGLEventArgs args)
         {
-            if (!this.IsFocused || !this.IsActive) return;
+            if (!this.IsActive) return;
             OpenGL gl = args.OpenGL;
             gl.Clear(OpenGL.GL_COLOR_BUFFER_BIT | OpenGL.GL_DEPTH_BUFFER_BIT);
             gl.LoadIdentity();
@@ -207,4 +218,5 @@ namespace STL_Viewer
         }
         #endregion
     }
+    public enum DimState { Default, Dimmed1, Dimmed2 }
 }

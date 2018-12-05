@@ -78,7 +78,7 @@ namespace StlLibrary
 
                     progressinfo.SetCount(length);
                     Triangle[] triangles = new Triangle[length];
-                    for (uint i = 1; i <= length; i++)
+                    for (uint i = 0; i < length; i++)
                     {
                         triangles[i] = new Triangle
                         {

@@ -18,12 +18,14 @@ namespace StlLibrary
         public void SetCount(ulong count)
         {
             this.count = count;
+            if (this.ProgressChanged == null) return;
             if (count == 0) this.ProgressChanged(this, new ProgressChangedEventArgs(0));
             this.ProgressChanged(this, new ProgressChangedEventArgs((double)current/count));
         }
         public void SetCurrent(ulong current)
         {
             this.current = current;
+            if (this.ProgressChanged == null) return;
             if (count == 0) this.ProgressChanged(this, new ProgressChangedEventArgs(0));
             this.ProgressChanged(this, new ProgressChangedEventArgs((double)current / count));
         }
