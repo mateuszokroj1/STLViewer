@@ -16,7 +16,7 @@
         <ToolBar x:Name="toolBar" Height="25" Width="175" HorizontalAlignment="Center" VerticalAlignment="Top" Margin="0,5,0,0" Panel.ZIndex="10">
             <Button Content="Otwórz STL..." Click="Button_Click"/>
             <Separator/>
-            <CheckBox x:Name="fullscreen" Content="Pełny ekran" Click="CheckBox_Click"/>
+            <CheckBox x:Name="fullscreen" Content="Pełny ekran"/>
         </ToolBar>
         <sharpGL:OpenGLControl x:Name="opengl" OpenGLVersion="OpenGL4_0" FrameRate="25" Foreground="White" OpenGLDraw="opengl_OpenGLDraw" Panel.ZIndex="0" >
         </sharpGL:OpenGLControl>

@@ -62,8 +62,8 @@ namespace StlLibrary
 
         public Task LoadAsync(FileStream file, Progress progressinfo)
         {
-            if (progressinfo == null) progressinfo = new StlLibrary.Progress();
-            return Task.Run(()=>
+            if (progressinfo == null) progressinfo = new Progress();
+            return Task.Run(() =>
             {
                 if (file == null) throw new ArgumentNullException();
                 if (!file.CanRead || file.Length < 84) throw new ArgumentException("Nieprawidłowy format");
@@ -108,7 +108,7 @@ namespace StlLibrary
                             },
                             Argument = reader.ReadUInt16()
                         };
-                        progressinfo.SetCurrent(i+1);
+                        progressinfo.SetCurrent(i + 1);
                     }
                     base.Triangles = triangles;
                     this.IsLoaded = true;

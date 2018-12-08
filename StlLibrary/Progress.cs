@@ -6,7 +6,7 @@ using System.ComponentModel;
 
 namespace StlLibrary
 {
-    public class Progress
+    public class Progress : IDisposable
     {
         private ulong count = 0;
         private ulong current = 0;
@@ -29,6 +29,12 @@ namespace StlLibrary
             if (count == 0) this.ProgressChanged(this, new ProgressChangedEventArgs(0));
             this.ProgressChanged(this, new ProgressChangedEventArgs((double)current / count));
         }
+
+        public void Dispose()
+        {
+            this.ProgressChanged = null;
+        }
+
         public event ProgressChangedEventHandler ProgressChanged;
     }
 

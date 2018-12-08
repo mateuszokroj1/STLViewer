@@ -1,10 +1,12 @@
 ﻿using System;
+using System.ComponentModel;
 using System.Linq;
 using System.IO;
 using System.Timers;
 using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Input;
+using System.Windows.Shell;
 using Microsoft.Win32;
 
 using SharpGL;
@@ -26,6 +28,7 @@ namespace STL_Viewer
         public MainWindow()
         {
             InitializeComponent();
+
         }
 
         private void Window_Loaded(object sender, RoutedEventArgs e)
@@ -34,7 +37,7 @@ namespace STL_Viewer
             dimming1 = new Timer(4000);
             dimming1.Elapsed += (obj, ev) =>
             {
-                this.Dispatcher.Invoke(() =>
+                Dispatcher.Invoke(() =>
                 {
                     this.toolBar.Visibility = Visibility.Hidden;
                     dimming1.Stop();
@@ -47,7 +50,7 @@ namespace STL_Viewer
             dimming2 = new Timer(4000);
             dimming2.Elapsed += (obj, ev) =>
             {
-                this.Dispatcher.Invoke(() =>
+                Dispatcher.Invoke(() =>
                 {
                     this.toolBar.Visibility = Visibility.Hidden;
                     this.opengl.Cursor = Cursors.None;
@@ -67,25 +70,42 @@ namespace STL_Viewer
             dialog.Title = "Otwórz plik STL";
             dialog.Filter = "Stereolithography 3D Model (STL)|*.stl";
             if (!dialog.ShowDialog(this) ?? false || dialog.FileNames.Length < 1 || !File.Exists(dialog.FileName)) return;
+            this.file?.Close();
             try { file = new FileStream(dialog.FileName, FileMode.Open, FileAccess.Read, FileShare.Read); }
             catch(IOException exc) { MessageBox.Show($"Wystąpił błąd podczas odczytu pliku: {exc.Message}", "Błąd odczytu", MessageBoxButton.OK, MessageBoxImage.Error); file = null; }
             if(!file.CanRead) { MessageBox.Show("Pliku nie można odczytać", "Błąd odczytu", MessageBoxButton.OK, MessageBoxImage.Error); file = null; }
+            Loading();
+        }
+
+        private void Loading()
+        {
+            if (this.file == null || (this.file?.CanRead ?? false)) return;
             bool ascii = true;
             for (uint i = 0; i < file.Length; i++)
-                if(file.ReadByte() > 128)
+                if (file.ReadByte() > 128)
                 {
                     ascii = false;
                     break;
                 }
 
-            if(ascii)
+            if (ascii)
             {
                 this.stl = new StlAscii();
                 Progress progress = new Progress();
-                Loading loading = new Loading(progress);
-                (this.stl as StlAscii).LoadAsync(this.file, progress);
-                if(loading.ShowDialog() ?? false)
+                Loading loading = new Loading();
+                this.taskbar.ProgressState = TaskbarItemProgressState.Normal;
+                progress.ProgressChanged += (sender,e) =>
                 {
+                    if (e.Progress < 1)
+                        this.taskbar.ProgressValue = e.Progress;
+                    else
+                        this.taskbar.ProgressState = TaskbarItemProgressState.None;
+                    loading.Set((float)Math.Round(e.Progress,2));
+                };
+                (this.stl as StlAscii).LoadAsync(this.file, progress);
+                if (loading.ShowDialog() ?? false)
+                {
+                    progress.Cancel = true;
                     this.file?.Close();
                     this.file = null;
                     this.stl = null;
@@ -95,7 +115,16 @@ namespace STL_Viewer
             {
                 this.stl = new StlBinary();
                 Progress progress = new Progress();
-                Loading loading = new Loading(progress);
+                Loading loading = new Loading();
+                this.taskbar.ProgressState = TaskbarItemProgressState.Normal;
+                progress.ProgressChanged += (sender, e) =>
+                {
+                    if (e.Progress < 1)
+                        this.taskbar.ProgressValue = e.Progress;
+                    else
+                        this.taskbar.ProgressState = TaskbarItemProgressState.None;
+                    loading.Set((float)Math.Round(e.Progress,2));
+                };
                 (this.stl as StlBinary).LoadAsync(this.file, progress);
                 if (loading.ShowDialog() ?? false)
                 {
@@ -106,11 +135,6 @@ namespace STL_Viewer
             }
         }
 
-        private void Loading()
-        {
-
-        }
-
         private void window_MouseMove(object sender, MouseEventArgs e)
         {
             dimming1.Stop();
@@ -119,27 +143,34 @@ namespace STL_Viewer
             if (this.state == DimState.Default) return;
             this.toolBar.Visibility = Visibility.Visible;
             this.opengl.Cursor = Cursors.Cross;
+            this.state = DimState.Default;
         }
 
-        private void CheckBox_Click(object sender, RoutedEventArgs e)
+        private bool isfullscreen;
+        public bool IsFullscreen
         {
-            if((sender as CheckBox).IsChecked ?? false) // Full screen
+            get => this.isfullscreen;
+            set
             {
-                this.ResizeMode = ResizeMode.NoResize;
-                this.WindowState = WindowState.Normal;
-                this.WindowStyle = WindowStyle.None;
-                this.Top = this.Left = 0;
-                this.Width = SystemParameters.PrimaryScreenWidth;
-                this.Height = SystemParameters.PrimaryScreenHeight;
-                this.Topmost = true;  
-            }
-            else
-            {
-                this.ResizeMode = ResizeMode.CanResize;
-                this.Topmost = false;
-                this.WindowStyle = WindowStyle.SingleBorderWindow;
-                this.Top = this.Left = 0;
-                this.WindowState = WindowState.Maximized;
+                this.isfullscreen = value;
+                if(value)
+                {
+                    ResizeMode = ResizeMode.NoResize;
+                    WindowState = WindowState.Normal;
+                    WindowStyle = WindowStyle.None;
+                    Top = this.Left = 0;
+                    Width = SystemParameters.PrimaryScreenWidth;
+                    Height = SystemParameters.PrimaryScreenHeight;
+                    Topmost = true;
+                }
+                else
+                {
+                    ResizeMode = ResizeMode.CanResize;
+                    Topmost = false;
+                    WindowStyle = WindowStyle.SingleBorderWindow;
+                    Top = this.Left = 0;
+                    WindowState = WindowState.Maximized;
+                }
             }
         }
 
@@ -149,24 +180,17 @@ namespace STL_Viewer
             OpenGL gl = args.OpenGL;
             gl.Clear(OpenGL.GL_COLOR_BUFFER_BIT | OpenGL.GL_DEPTH_BUFFER_BIT);
             gl.LoadIdentity();
-
-            gl.Color(0, 0, 0);
-            gl.Begin(OpenGL.GL_QUADS);
-                gl.Vertex(0, 0);
-                gl.Vertex(opengl.Width, 0);
-                gl.Vertex(0, opengl.Height);
-                gl.Vertex(opengl.Width, opengl.Height);
-            gl.End();
+            
             gl.Color((byte)255,(byte)255,(byte)255);
             gl.Begin(OpenGL.GL_TRIANGLES);
-                gl.Vertex(opengl.Width/2,0);
-                gl.Vertex(opengl.Width,opengl.Height);
-                gl.Vertex(0,opengl.Height);
+                gl.Vertex4f(-1,0,0,1);
+                gl.Vertex4f(1,0,0,1);
+                gl.Vertex4f(0,1,0,1);
             gl.End();
 
             if (file != null && stl != null && stl.IsLoaded && stl.Triangles.Count() > 0)
             {
-                gl.LoadIdentity();
+                
                 //gl.ColorMaterial(OpenGL.GL_FRONT, OpenGL.GL_DIFFUSE);
                 gl.Color((byte)128, (byte)128, (byte)128);
                 gl.Begin(OpenGL.GL_TRIANGLES);
