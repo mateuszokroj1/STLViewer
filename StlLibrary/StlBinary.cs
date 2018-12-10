@@ -78,36 +78,37 @@ namespace StlLibrary
 
                     progressinfo.SetCount(length);
                     Triangle[] triangles = new Triangle[length];
+                    Triangle newtri;
                     for (uint i = 0; i < length; i++)
                     {
-                        triangles[i] = new Triangle
+                        if (progressinfo.Cancel) return;
+                        newtri = new Triangle();
+                        newtri.Normal = new Point3D
                         {
-                            Normal = new Point3D
-                            {
-                                X = reader.ReadSingle(),
-                                Y = reader.ReadSingle(),
-                                Z = reader.ReadSingle()
-                            },
-                            Vertex1 = new Point3D
-                            {
-                                X = reader.ReadSingle(),
-                                Y = reader.ReadSingle(),
-                                Z = reader.ReadSingle()
-                            },
-                            Vertex2 = new Point3D
-                            {
-                                X = reader.ReadSingle(),
-                                Y = reader.ReadSingle(),
-                                Z = reader.ReadSingle()
-                            },
-                            Vertex3 = new Point3D
-                            {
-                                X = reader.ReadSingle(),
-                                Y = reader.ReadSingle(),
-                                Z = reader.ReadSingle()
-                            },
-                            Argument = reader.ReadUInt16()
+                            X = reader.ReadSingle(),
+                            Y = reader.ReadSingle(),
+                            Z = reader.ReadSingle()
                         };
+                        newtri.Vertex1 = new Point3D
+                        {
+                            X = reader.ReadSingle(),
+                            Y = reader.ReadSingle(),
+                            Z = reader.ReadSingle()
+                        };
+                        newtri.Vertex2 = new Point3D
+                        {
+                            X = reader.ReadSingle(),
+                            Y = reader.ReadSingle(),
+                            Z = reader.ReadSingle()
+                        };
+                        newtri.Vertex3 = new Point3D
+                        {
+                            X = reader.ReadSingle(),
+                            Y = reader.ReadSingle(),
+                            Z = reader.ReadSingle()
+                        };
+                        newtri.Argument = reader.ReadUInt16();
+                        triangles[i] = newtri;
                         progressinfo.SetCurrent(i + 1);
                     }
                     base.Triangles = triangles;

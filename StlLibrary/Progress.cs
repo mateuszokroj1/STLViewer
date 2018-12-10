@@ -20,14 +20,14 @@ namespace StlLibrary
             this.count = count;
             if (this.ProgressChanged == null) return;
             if (count == 0) this.ProgressChanged(this, new ProgressChangedEventArgs(0));
-            this.ProgressChanged(this, new ProgressChangedEventArgs((double)current/count));
+            this.ProgressChanged(this, new ProgressChangedEventArgs((float)current/count));
         }
         public void SetCurrent(ulong current)
         {
             this.current = current;
             if (this.ProgressChanged == null) return;
             if (count == 0) this.ProgressChanged(this, new ProgressChangedEventArgs(0));
-            this.ProgressChanged(this, new ProgressChangedEventArgs((double)current / count));
+            this.ProgressChanged(this, new ProgressChangedEventArgs((float)current / count));
         }
 
         public void Dispose()
@@ -40,8 +40,8 @@ namespace StlLibrary
 
     public class ProgressChangedEventArgs : EventArgs
     {
-        public ProgressChangedEventArgs(double progress) { this.Progress = progress; }
-        public double Progress { get; private set; }
+        public ProgressChangedEventArgs(float progress) { this.Progress = progress; }
+        public float Progress { get; private set; }
     }
 
     public delegate void ProgressChangedEventHandler(object sender, ProgressChangedEventArgs e);

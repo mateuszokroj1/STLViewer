@@ -19,25 +19,10 @@ namespace STL_Viewer
     /// </summary>
     public partial class Loading : Window
     {
-        public Loading()
+        public Loading(string filename)
         {
             InitializeComponent();
-        }
-
-        public void Set(float progress)
-        {
-            if (progress > 1 || progress < 0) throw new ArgumentOutOfRangeException("Progress must be value of range [0,1].");
-            Dispatcher.Invoke(()=>
-            {
-                this.Progress.Minimum = 0;
-                this.Progress.Maximum = 1;
-                this.Progress.Value = progress;
-            });
-            if (progress == 1)
-            {
-                DialogResult = true;
-                Close();
-            }
+            this.text.Text += filename;
         }
     }
 }
