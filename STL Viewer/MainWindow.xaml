@@ -18,12 +18,12 @@
             <Separator/>
             <CheckBox x:Name="fullscreen" Content="Pełny ekran" IsChecked="{Binding IsFullscreen, ElementName=window, Mode=OneWayToSource}"/>
             <Separator/>
-            <ComboBox SelectedIndex="0" Margin="0" Width="66" IsReadOnly="True" SelectionChanged="ComboBox_SelectionChanged">
+            <ComboBox SelectedIndex="2" Margin="0" Width="66" IsReadOnly="True" SelectionChanged="ComboBox_SelectionChanged">
                 <ComboBoxItem Content="Siatka"/>
                 <ComboBoxItem Content="Kolor podstawowy"/>
-                <ComboBoxItem Content="Materiał"/>
+                <ComboBoxItem Content="Materiał" IsSelected="True"/>
             </ComboBox>
         </ToolBar>
-        <sharpGL:OpenGLControl x:Name="opengl" OpenGLDraw="opengl_OpenGLDraw" Panel.ZIndex="0" MouseDown="Opengl_MouseDown" MouseUp="Opengl_MouseUp" MouseMove="Opengl_MouseMove" MouseWheel="Opengl_MouseWheel" />
+        <sharpGL:OpenGLControl x:Name="opengl" OpenGLDraw="opengl_OpenGLDraw" Panel.ZIndex="0" MouseDown="Opengl_MouseDown" MouseUp="Opengl_MouseUp" MouseMove="Opengl_MouseMove" MouseWheel="Opengl_MouseWheel" OpenGLInitialized="Opengl_OpenGLInitialized" ManipulationDelta="Opengl_ManipulationDelta" IsManipulationEnabled="True" OpenGLVersion="OpenGL4_0" />
     </Grid>
 </Window>

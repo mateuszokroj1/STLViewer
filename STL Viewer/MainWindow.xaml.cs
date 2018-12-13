@@ -26,8 +26,9 @@ namespace STL_Viewer
         private DimState state;
         private OpenFileDialog dialog = new OpenFileDialog();
         private ManipulationMode manipulating = ManipulationMode.None;
-        private float x = 0, y = 0, zoom = -3.5f, rx = 0, ry = 0;
-        public ViewMode ViewMode { get; set; } = ViewMode.Mesh;
+        private double x = 0, y = 0, zoom = -4.0, rx = 20.0, ry = 20.0;
+        private Point mousestartpos;
+        public ViewMode ViewMode { get; set; } = ViewMode.Material;
 
         public MainWindow()
         {
@@ -63,6 +64,65 @@ namespace STL_Viewer
             };
         }
 
+        private void ComboBox_SelectionChanged(object sender, SelectionChangedEventArgs e)
+        {
+            ComboBox combo = sender as ComboBox;
+            switch (combo.SelectedIndex)
+            {
+                case 0:
+                    ViewMode = ViewMode.Mesh;
+                    return;
+                case 1:
+                    ViewMode = ViewMode.BasicColor;
+                    return;
+                case 2:
+                    ViewMode = ViewMode.Material;
+                    return;
+                default:
+                    combo.SelectedIndex = 0;
+                    ViewMode = ViewMode.Mesh;
+                    return;
+            }
+        }
+
+        private void Opengl_MouseDown(object sender, MouseButtonEventArgs e)
+        {
+            if (this.manipulating != ManipulationMode.None) return;
+            if(e.LeftButton == MouseButtonState.Pressed & e.RightButton != MouseButtonState.Pressed)
+            {
+                this.manipulating = ManipulationMode.Translate;
+                this.mousestartpos = e.GetPosition(this.window);
+            }
+            else if(e.LeftButton != MouseButtonState.Pressed & e.RightButton == MouseButtonState.Pressed)
+            {
+                this.manipulating = ManipulationMode.Translate;
+                this.mousestartpos = e.GetPosition(this.window);
+            }
+        }
+
+        private void Opengl_MouseUp(object sender, MouseButtonEventArgs e)
+        {
+            manipulating = ManipulationMode.None;
+        }
+
+        private void Opengl_MouseMove(object sender, MouseEventArgs e)
+        {
+            if(manipulating == ManipulationMode.Translate)
+            {
+                Point current = e.GetPosition(this.window);
+                this.x = -(this.mousestartpos - current).X / 50;
+                this.y = (this.mousestartpos - current).Y / 50;
+            }
+            else if(manipulating == ManipulationMode.Rotate)
+            {
+
+            }
+        }
+
+        private void Opengl_MouseWheel(object sender, MouseWheelEventArgs e)
+        {
+            this.zoom = Math.Min(Math.Max(-200f, this.zoom + (e.Delta / 100f)), 200f);
+        }
 
         private void Button_Click(object sender, RoutedEventArgs e)
         {
@@ -192,6 +252,34 @@ namespace STL_Viewer
             }
         }
 
+        private void Opengl_OpenGLInitialized(object sender, SharpGL.SceneGraph.OpenGLEventArgs args)
+        {
+            OpenGL GL = args.OpenGL;
+            GL.Enable(OpenGL.GL_DEPTH_TEST);
+            float[] global_ambient = new float[] { 0, 0f, 0f, 1.0f };
+            float[] light0pos = new float[] { 0.0f, 5.0f, 10.0f, 1.0f };
+            float[] light0ambient = new float[] { 0.5f, 0.5f, 0.2f, 1.0f };
+            float[] light0diffuse = new float[] { 1f, 1f, 0.3f, 1.0f };
+            float[] light0specular = new float[] { 1f, 1f, 1f, 1.0f };
+
+            float[] lmodel_ambient = new float[] { 0.2f, 0.2f, 0.2f, 1.0f };
+            GL.LightModel(OpenGL.GL_LIGHT_MODEL_AMBIENT, lmodel_ambient);
+
+            GL.LightModel(OpenGL.GL_LIGHT_MODEL_AMBIENT, global_ambient);
+            GL.Light(OpenGL.GL_LIGHT0, OpenGL.GL_POSITION, light0pos);
+            GL.Light(OpenGL.GL_LIGHT0, OpenGL.GL_AMBIENT, light0ambient);
+            GL.Light(OpenGL.GL_LIGHT0, OpenGL.GL_DIFFUSE, light0diffuse);
+            GL.Light(OpenGL.GL_LIGHT0, OpenGL.GL_SPECULAR, light0specular);
+            
+
+            GL.ShadeModel(OpenGL.GL_SMOOTH);
+        }
+
+        private void Opengl_ManipulationDelta(object sender, ManipulationDeltaEventArgs e)
+        {
+            this.zoom = (float)e.CumulativeManipulation.Scale.Length;
+        }
+
         private void opengl_OpenGLDraw(object sender, SharpGL.SceneGraph.OpenGLEventArgs args)
         {
             OpenGL gl = args.OpenGL;
@@ -202,27 +290,34 @@ namespace STL_Viewer
             //  Load identity matrix = reset modelview
             gl.LoadIdentity();
 
+            switch (ViewMode)
+            {
+                case ViewMode.Material:
+                    gl.Disable(OpenGL.GL_CULL_FACE);
+                    gl.Enable(OpenGL.GL_LIGHTING);
+                    gl.Enable(OpenGL.GL_LIGHT0);
+                    break;
+                case ViewMode.BasicColor:
+                    gl.Disable(OpenGL.GL_CULL_FACE);
+                    gl.Disable(OpenGL.GL_LIGHTING);
+                    gl.Disable(OpenGL.GL_LIGHT0);
+                    gl.Color(1f,1f,0);
+                    break;
+                case ViewMode.Mesh:
+                    gl.Disable(OpenGL.GL_LIGHTING);
+                    gl.Disable(OpenGL.GL_LIGHT0);
+                    gl.Enable(OpenGL.GL_CULL_FACE);
+                    gl.CullFace();
+                    break;
+            }
             //  Moving the drawing axis
             gl.Translate(this.x, this.y, this.zoom);
-
+            // Rotating
+            gl.Rotate ((float)this.rx, (float)this.ry, 20.0f);
             if (stl == null || !stl.IsLoaded) // START SCREEN
             {
-                if (ViewMode == ViewMode.Mesh)
-                    gl.Begin(BeginMode.LineLoop);
-                else
-                    gl.Begin(OpenGL.GL_QUADS);
-                if (ViewMode == ViewMode.Material)
-                {
-                    gl.ShadeModel(ShadeModel.Smooth);
-                    
-                    
-                    gl.ColorMaterial(OpenGL.GL_FRONT, OpenGL.GL_DIFFUSE);
-                }
-                else if(ViewMode == ViewMode.BasicColor)
-                {
-                    gl.ShadeModel(ShadeModel.Flat);
-                    gl.Color(1f, 1f, 1f);
-                }
+                gl.Begin(OpenGL.GL_QUADS);
+                
                 gl.Vertex4f(-1f, -1f, 1f, 1f);
                 gl.Vertex4f(-1f, 1f, 1f, 1f);
                 gl.Vertex4f(1f, 1f, 1f, 1f);
@@ -235,7 +330,7 @@ namespace STL_Viewer
                 gl.End();
             } else
             {
-                gl.Begin(BeginMode.LineLoop);
+                gl.Begin(BeginMode.Triangles);
                     gl.Color(1f,1f,1f);
                     foreach(Triangle facet in stl.Triangles)
                     {
@@ -283,46 +378,7 @@ namespace STL_Viewer
             }
         }
 
-        private void ComboBox_SelectionChanged(object sender, SelectionChangedEventArgs e)
-        {
-            ComboBox combo = sender as ComboBox;
-            switch (combo.SelectedIndex)
-            {
-                case 0:
-                    ViewMode = ViewMode.Mesh;
-                    return;
-                case 1:
-                    ViewMode = ViewMode.BasicColor;
-                    return;
-                case 2:
-                    ViewMode = ViewMode.Material;
-                    return;
-                default:
-                    combo.SelectedIndex = 0;
-                    ViewMode = ViewMode.Mesh;
-                    return;
-            }
-        }
-
-        private void Opengl_MouseDown(object sender, MouseButtonEventArgs e)
-        {
-
-        }
-
-        private void Opengl_MouseUp(object sender, MouseButtonEventArgs e)
-        {
-
-        }
-
-        private void Opengl_MouseMove(object sender, MouseEventArgs e)
-        {
-
-        }
-
-        private void Opengl_MouseWheel(object sender, MouseWheelEventArgs e)
-        {
-            this.zoom = Math.Min(Math.Max(-200f, this.zoom + (e.Delta / 100f)), 200f);
-        }
+        
 
         public void Dispose()
         {
