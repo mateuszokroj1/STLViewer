@@ -89,15 +89,10 @@ namespace STL_Viewer
         {
             if (this.manipulating != ManipulationMode.None) return;
             if(e.LeftButton == MouseButtonState.Pressed & e.RightButton != MouseButtonState.Pressed)
-            {
                 this.manipulating = ManipulationMode.Translate;
-                this.mousestartpos = e.GetPosition(this.window);
-            }
             else if(e.LeftButton != MouseButtonState.Pressed & e.RightButton == MouseButtonState.Pressed)
-            {
-                this.manipulating = ManipulationMode.Translate;
-                this.mousestartpos = e.GetPosition(this.window);
-            }
+                this.manipulating = ManipulationMode.Rotate;
+            this.mousestartpos = e.GetPosition(this.opengl);
         }
 
         private void Opengl_MouseUp(object sender, MouseButtonEventArgs e)
@@ -109,22 +104,29 @@ namespace STL_Viewer
         {
             if(manipulating == ManipulationMode.Translate)
             {
-                Point current = e.GetPosition(this.window);
+                Point current = e.GetPosition(this.opengl);
                 this.x = -(this.mousestartpos - current).X / 50;
                 this.y = (this.mousestartpos - current).Y / 50;
             }
             else if(manipulating == ManipulationMode.Rotate)
             {
-
+                Point current = e.GetPosition(this.opengl);
+                this.ry += (this.mousestartpos - current).X / 100;
+                this.rx += (this.mousestartpos - current).Y / 100;
             }
         }
 
         private void Opengl_MouseWheel(object sender, MouseWheelEventArgs e)
         {
-            this.zoom = Math.Min(Math.Max(-200f, this.zoom + (e.Delta / 100f)), 200f);
+            if(Keyboard.GetKeyStates(Key.LeftShift) == KeyStates.Down | Keyboard.GetKeyStates(Key.RightShift) == KeyStates.Down)
+                this.zoom = Math.Min(Math.Max(-200f, this.zoom + (e.Delta / 400f)), 200f);
+            else if(Keyboard.GetKeyStates(Key.LeftCtrl) == KeyStates.Down | Keyboard.GetKeyStates(Key.RightCtrl) == KeyStates.Down)
+                this.zoom = Math.Min(Math.Max(-200f, this.zoom + (e.Delta / 1000f)), 200f);
+            else
+                this.zoom = Math.Min(Math.Max(-200f, this.zoom + (e.Delta / 50f)), 200f);
         }
 
-        private void Button_Click(object sender, RoutedEventArgs e)
+        private void OpenButton(object sender, RoutedEventArgs e)
         {
             dialog.CheckFileExists = true;
             dialog.DefaultExt = "stl";
@@ -257,22 +259,19 @@ namespace STL_Viewer
             OpenGL GL = args.OpenGL;
             GL.Enable(OpenGL.GL_DEPTH_TEST);
             float[] global_ambient = new float[] { 0, 0f, 0f, 1.0f };
-            float[] light0pos = new float[] { 0.0f, 5.0f, 10.0f, 1.0f };
-            float[] light0ambient = new float[] { 0.5f, 0.5f, 0.2f, 1.0f };
+            
+            float[] light0ambient = new float[] { 0.0f, 0.0f, 0.0f, 0f };
             float[] light0diffuse = new float[] { 1f, 1f, 0.3f, 1.0f };
             float[] light0specular = new float[] { 1f, 1f, 1f, 1.0f };
 
-            float[] lmodel_ambient = new float[] { 0.2f, 0.2f, 0.2f, 1.0f };
-            GL.LightModel(OpenGL.GL_LIGHT_MODEL_AMBIENT, lmodel_ambient);
-
-            GL.LightModel(OpenGL.GL_LIGHT_MODEL_AMBIENT, global_ambient);
+            float[] light0pos = new float[] { 0.0f, 0.0f, 20.0f, 1.0f };
             GL.Light(OpenGL.GL_LIGHT0, OpenGL.GL_POSITION, light0pos);
             GL.Light(OpenGL.GL_LIGHT0, OpenGL.GL_AMBIENT, light0ambient);
             GL.Light(OpenGL.GL_LIGHT0, OpenGL.GL_DIFFUSE, light0diffuse);
             GL.Light(OpenGL.GL_LIGHT0, OpenGL.GL_SPECULAR, light0specular);
             
 
-            GL.ShadeModel(OpenGL.GL_SMOOTH);
+            GL.ShadeModel(ShadeModel.Flat);
         }
 
         private void Opengl_ManipulationDelta(object sender, ManipulationDeltaEventArgs e)
@@ -290,24 +289,29 @@ namespace STL_Viewer
             //  Load identity matrix = reset modelview
             gl.LoadIdentity();
 
+            
+
             switch (ViewMode)
             {
                 case ViewMode.Material:
-                    gl.Disable(OpenGL.GL_CULL_FACE);
                     gl.Enable(OpenGL.GL_LIGHTING);
                     gl.Enable(OpenGL.GL_LIGHT0);
+                    gl.Material(OpenGL.GL_FRONT, OpenGL.GL_SPECULAR, 1f);
+                    gl.Material(OpenGL.GL_FRONT_AND_BACK, OpenGL.GL_AMBIENT, 0);
+                    gl.PolygonMode(FaceMode.FrontAndBack, PolygonMode.Filled);
                     break;
                 case ViewMode.BasicColor:
-                    gl.Disable(OpenGL.GL_CULL_FACE);
                     gl.Disable(OpenGL.GL_LIGHTING);
                     gl.Disable(OpenGL.GL_LIGHT0);
+                    gl.PolygonMode(FaceMode.FrontAndBack,PolygonMode.Filled);
                     gl.Color(1f,1f,0);
                     break;
                 case ViewMode.Mesh:
                     gl.Disable(OpenGL.GL_LIGHTING);
                     gl.Disable(OpenGL.GL_LIGHT0);
-                    gl.Enable(OpenGL.GL_CULL_FACE);
-                    gl.CullFace();
+                    gl.PolygonMode(FaceMode.FrontAndBack, PolygonMode.Lines);
+                    gl.Color(0,0,1f);
+                    gl.LineWidth(0.5f);
                     break;
             }
             //  Moving the drawing axis
@@ -317,15 +321,36 @@ namespace STL_Viewer
             if (stl == null || !stl.IsLoaded) // START SCREEN
             {
                 gl.Begin(OpenGL.GL_QUADS);
+
+                gl.Vertex4f(1.0f, 1.0f, -1.0f,1f);
+                gl.Vertex4f(-1.0f, 1.0f, -1.0f, 1f);
+                gl.Vertex4f(-1.0f, 1.0f, 1.0f, 1f);
+                gl.Vertex4f(1.0f, 1.0f, 1.0f, 1f);
                 
-                gl.Vertex4f(-1f, -1f, 1f, 1f);
-                gl.Vertex4f(-1f, 1f, 1f, 1f);
-                gl.Vertex4f(1f, 1f, 1f, 1f);
-                gl.Vertex4f(1f,-1f, 1f, 1f);
-                gl.Vertex4f(-1f, 1f, -1f, 1f);
-                gl.Vertex4f(1f, 1f, -1f, 1f);
-                gl.Vertex4f(1f, -1f, -1f, 1f);
-                gl.Vertex4f(-1f, -1f, -1f, 1f);
+                gl.Vertex4f(1.0f, -1.0f, 1.0f, 1f);
+                gl.Vertex4f(-1.0f, -1.0f, 1.0f, 1f);
+                gl.Vertex4f(-1.0f, -1.0f, -1.0f, 1f);
+                gl.Vertex4f(1.0f, -1.0f, -1.0f, 1f);
+                
+                gl.Vertex4f(1.0f, 1.0f, 1.0f, 1f);
+                gl.Vertex4f(-1.0f, 1.0f, 1.0f, 1f);
+                gl.Vertex4f(-1.0f, -1.0f, 1.0f, 1f);
+                gl.Vertex4f(1.0f, -1.0f, 1.0f, 1f);
+                
+                gl.Vertex4f(1.0f, -1.0f, -1.0f, 1f);
+                gl.Vertex4f(-1.0f, -1.0f, -1.0f, 1f);
+                gl.Vertex4f(-1.0f, 1.0f, -1.0f, 1f);
+                gl.Vertex4f(1.0f, 1.0f, -1.0f, 1f);
+                
+                gl.Vertex4f(-1.0f, 1.0f, 1.0f, 1f);
+                gl.Vertex4f(-1.0f, 1.0f, -1.0f, 1f);
+                gl.Vertex4f(-1.0f, -1.0f, -1.0f, 1f);
+                gl.Vertex4f(-1.0f, -1.0f, 1.0f, 1f);
+                
+                gl.Vertex4f(1.0f, 1.0f, -1.0f, 1f);
+                gl.Vertex4f(1.0f, 1.0f, 1.0f, 1f);
+                gl.Vertex4f(1.0f, -1.0f, 1.0f, 1f);
+                gl.Vertex4f(1.0f, -1.0f, -1.0f, 1f);
 
                 gl.End();
             } else

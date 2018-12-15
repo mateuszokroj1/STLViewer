@@ -14,7 +14,7 @@
     </Window.TaskbarItemInfo>
     <Grid>
         <ToolBar x:Name="toolBar" Height="25" Width="243" HorizontalAlignment="Center" VerticalAlignment="Top" Margin="0,10,0,0" Panel.ZIndex="10">
-            <Button Content="Otwórz STL..." Click="Button_Click"/>
+            <Button Content="Otwórz STL..." Click="OpenButton"/>
             <Separator/>
             <CheckBox x:Name="fullscreen" Content="Pełny ekran" IsChecked="{Binding IsFullscreen, ElementName=window, Mode=OneWayToSource}"/>
             <Separator/>
