@@ -1,5 +1,6 @@
 ﻿using System;
 using System.IO;
+using System.Linq;
 using System.Timers;
 using System.Windows;
 using System.Windows.Controls;
@@ -27,7 +28,8 @@ namespace STL_Viewer
         private OpenFileDialog dialog = new OpenFileDialog();
         private ManipulationMode manipulating = ManipulationMode.None;
         private double x = 0, y = 0, zoom = -4.0, rx = 20.0, ry = 20.0;
-        private Point mousestartpos;
+        private double startx = 0, starty = 0, startrx = 0, startry = 0;
+        private Point clickpos;
         public ViewMode ViewMode { get; set; } = ViewMode.Material;
 
         public MainWindow()
@@ -92,7 +94,11 @@ namespace STL_Viewer
                 this.manipulating = ManipulationMode.Translate;
             else if(e.LeftButton != MouseButtonState.Pressed & e.RightButton == MouseButtonState.Pressed)
                 this.manipulating = ManipulationMode.Rotate;
-            this.mousestartpos = e.GetPosition(this.opengl);
+            this.startx = this.x;
+            this.starty = this.y;
+            this.clickpos = e.GetPosition(this.opengl);
+            this.startrx = this.rx;
+            this.startry = this.ry;
         }
 
         private void Opengl_MouseUp(object sender, MouseButtonEventArgs e)
@@ -104,26 +110,37 @@ namespace STL_Viewer
         {
             if(manipulating == ManipulationMode.Translate)
             {
-                Point current = e.GetPosition(this.opengl);
-                this.x = -(this.mousestartpos - current).X / 50;
-                this.y = (this.mousestartpos - current).Y / 50;
+                Point pos = e.GetPosition(this.opengl);
+                if (System.Windows.Input.Keyboard.GetKeyStates(System.Windows.Input.Key.LeftCtrl) == System.Windows.Input.KeyStates.Down | System.Windows.Input.Keyboard.GetKeyStates(System.Windows.Input.Key.RightCtrl) == System.Windows.Input.KeyStates.Down)
+                {
+                    this.x = this.startx + ((pos.X - this.clickpos.X) / 500f);
+                    this.y = this.starty + -((pos.Y - this.clickpos.Y) / 500f);
+                }
+                else
+                {
+                    this.x = this.startx + ((pos.X-this.clickpos.X) / 50f);
+                    this.y = this.starty + -((pos.Y-this.clickpos.Y) / 50f);
+                }
+                this.label1.Content = $"X: {this.x}, Y: {this.y}";
             }
             else if(manipulating == ManipulationMode.Rotate)
             {
-                Point current = e.GetPosition(this.opengl);
-                this.ry += (this.mousestartpos - current).X / 100;
-                this.rx += (this.mousestartpos - current).Y / 100;
+                Point pos = e.GetPosition(this.opengl);
+                this.ry = this.startry + ((pos.X - this.clickpos.X)/5f);
+                this.rx = this.startrx + ((pos.Y - this.clickpos.Y)/5f);
+                this.label1.Content = $"RX: {rx}, RY: {ry}";
             }
         }
 
         private void Opengl_MouseWheel(object sender, MouseWheelEventArgs e)
         {
-            if(Keyboard.GetKeyStates(Key.LeftShift) == KeyStates.Down | Keyboard.GetKeyStates(Key.RightShift) == KeyStates.Down)
-                this.zoom = Math.Min(Math.Max(-200f, this.zoom + (e.Delta / 400f)), 200f);
-            else if(Keyboard.GetKeyStates(Key.LeftCtrl) == KeyStates.Down | Keyboard.GetKeyStates(Key.RightCtrl) == KeyStates.Down)
-                this.zoom = Math.Min(Math.Max(-200f, this.zoom + (e.Delta / 1000f)), 200f);
+            if(System.Windows.Input.Keyboard.GetKeyStates(System.Windows.Input.Key.LeftShift) == System.Windows.Input.KeyStates.Down | System.Windows.Input.Keyboard.GetKeyStates(System.Windows.Input.Key.RightShift) == System.Windows.Input.KeyStates.Down)
+                this.zoom = Math.Min(Math.Max(-1000f, this.zoom + (e.Delta / 2f)), 200f);
+            else if(System.Windows.Input.Keyboard.GetKeyStates(System.Windows.Input.Key.LeftCtrl) == System.Windows.Input.KeyStates.Down | System.Windows.Input.Keyboard.GetKeyStates(System.Windows.Input.Key.RightCtrl) == System.Windows.Input.KeyStates.Down)
+                this.zoom = Math.Min(Math.Max(-1000f, this.zoom + (e.Delta / 1000f)), 200f);
             else
-                this.zoom = Math.Min(Math.Max(-200f, this.zoom + (e.Delta / 50f)), 200f);
+                this.zoom = Math.Min(Math.Max(-1000f, this.zoom + (e.Delta / 200f)), 200f);
+            this.label2.Content = $"Zoom: {this.zoom}";
         }
 
         private void OpenButton(object sender, RoutedEventArgs e)
@@ -211,8 +228,23 @@ namespace STL_Viewer
                     this.file = null;
                     this.stl = null;
                 }
-                this.taskbar.ProgressState = TaskbarItemProgressState.None;
             }
+            this.x = this.y = this.rx = this.ry = 0f;
+            if (this.stl.Triangles.Count() < 1) this.zoom = 0;
+            else
+            {
+                var maxvalues = this.stl.Triangles.Select(item =>
+                new
+                {
+                    X = (new double[] { Math.Abs(item.Vertex1.X), Math.Abs(item.Vertex2.X), Math.Abs(item.Vertex3.X) }).Max(),
+                    Y = (new double[] { Math.Abs(item.Vertex1.Y), Math.Abs(item.Vertex2.Y), Math.Abs(item.Vertex3.Y) }).Max()
+                });
+                double x = maxvalues.Select(item => item.X).Max();
+                double y = maxvalues.Select(item => item.Y).Max();
+                if (x > y) this.zoom = -x;
+                else this.zoom = -y;
+            }
+            this.taskbar.ProgressState = TaskbarItemProgressState.None;
         }
 
         private void window_MouseMove(object sender, MouseEventArgs e)
@@ -225,6 +257,7 @@ namespace STL_Viewer
             this.opengl.Cursor = Cursors.Cross;
             this.state = DimState.Default;
         }
+        private void Scale_MouseDoubleClick(object sender, MouseButtonEventArgs e) => (sender as Slider).Value = 0;
 
         private bool isfullscreen;
         public bool IsFullscreen
@@ -263,15 +296,13 @@ namespace STL_Viewer
             float[] light0ambient = new float[] { 0.0f, 0.0f, 0.0f, 0f };
             float[] light0diffuse = new float[] { 1f, 1f, 0.3f, 1.0f };
             float[] light0specular = new float[] { 1f, 1f, 1f, 1.0f };
+            // Odległość rysowania
+            GL.Frustum();
 
-            float[] light0pos = new float[] { 0.0f, 0.0f, 20.0f, 1.0f };
-            GL.Light(OpenGL.GL_LIGHT0, OpenGL.GL_POSITION, light0pos);
+
             GL.Light(OpenGL.GL_LIGHT0, OpenGL.GL_AMBIENT, light0ambient);
             GL.Light(OpenGL.GL_LIGHT0, OpenGL.GL_DIFFUSE, light0diffuse);
             GL.Light(OpenGL.GL_LIGHT0, OpenGL.GL_SPECULAR, light0specular);
-            
-
-            GL.ShadeModel(ShadeModel.Flat);
         }
 
         private void Opengl_ManipulationDelta(object sender, ManipulationDeltaEventArgs e)
@@ -289,8 +320,6 @@ namespace STL_Viewer
             //  Load identity matrix = reset modelview
             gl.LoadIdentity();
 
-            
-
             switch (ViewMode)
             {
                 case ViewMode.Material:
@@ -299,11 +328,12 @@ namespace STL_Viewer
                     gl.Material(OpenGL.GL_FRONT, OpenGL.GL_SPECULAR, 1f);
                     gl.Material(OpenGL.GL_FRONT_AND_BACK, OpenGL.GL_AMBIENT, 0);
                     gl.PolygonMode(FaceMode.FrontAndBack, PolygonMode.Filled);
+                    gl.ShadeModel(ShadeModel.Smooth);
                     break;
                 case ViewMode.BasicColor:
                     gl.Disable(OpenGL.GL_LIGHTING);
                     gl.Disable(OpenGL.GL_LIGHT0);
-                    gl.PolygonMode(FaceMode.FrontAndBack,PolygonMode.Filled);
+                    gl.PolygonMode(FaceMode.Front,PolygonMode.Filled);
                     gl.Color(1f,1f,0);
                     break;
                 case ViewMode.Mesh:
@@ -314,44 +344,60 @@ namespace STL_Viewer
                     gl.LineWidth(0.5f);
                     break;
             }
+
             //  Moving the drawing axis
             gl.Translate(this.x, this.y, this.zoom);
+            float[] light0pos = new float[] { 0.0f, 0.0f, 20.0f, 1.0f };
+            gl.Light(OpenGL.GL_LIGHT0, OpenGL.GL_POSITION, light0pos);
             // Rotating
             gl.Rotate ((float)this.rx, (float)this.ry, 20.0f);
+
             if (stl == null || !stl.IsLoaded) // START SCREEN
             {
                 gl.Begin(OpenGL.GL_QUADS);
 
+                // Top
+                gl.Normal(0f, 1f, 0f);
                 gl.Vertex4f(1.0f, 1.0f, -1.0f,1f);
                 gl.Vertex4f(-1.0f, 1.0f, -1.0f, 1f);
                 gl.Vertex4f(-1.0f, 1.0f, 1.0f, 1f);
                 gl.Vertex4f(1.0f, 1.0f, 1.0f, 1f);
-                
+
+                // Bottom
+                gl.Normal(0f,-1f,0f);
                 gl.Vertex4f(1.0f, -1.0f, 1.0f, 1f);
                 gl.Vertex4f(-1.0f, -1.0f, 1.0f, 1f);
                 gl.Vertex4f(-1.0f, -1.0f, -1.0f, 1f);
-                gl.Vertex4f(1.0f, -1.0f, -1.0f, 1f);
-                
-                gl.Vertex4f(1.0f, 1.0f, 1.0f, 1f);
-                gl.Vertex4f(-1.0f, 1.0f, 1.0f, 1f);
-                gl.Vertex4f(-1.0f, -1.0f, 1.0f, 1f);
-                gl.Vertex4f(1.0f, -1.0f, 1.0f, 1f);
-                
-                gl.Vertex4f(1.0f, -1.0f, -1.0f, 1f);
-                gl.Vertex4f(-1.0f, -1.0f, -1.0f, 1f);
-                gl.Vertex4f(-1.0f, 1.0f, -1.0f, 1f);
-                gl.Vertex4f(1.0f, 1.0f, -1.0f, 1f);
-                
-                gl.Vertex4f(-1.0f, 1.0f, 1.0f, 1f);
-                gl.Vertex4f(-1.0f, 1.0f, -1.0f, 1f);
-                gl.Vertex4f(-1.0f, -1.0f, -1.0f, 1f);
-                gl.Vertex4f(-1.0f, -1.0f, 1.0f, 1f);
-                
-                gl.Vertex4f(1.0f, 1.0f, -1.0f, 1f);
-                gl.Vertex4f(1.0f, 1.0f, 1.0f, 1f);
-                gl.Vertex4f(1.0f, -1.0f, 1.0f, 1f);
                 gl.Vertex4f(1.0f, -1.0f, -1.0f, 1f);
 
+                // Front
+                gl.Normal(0f,0f,1f);
+                gl.Vertex4f(1.0f, 1.0f, 1.0f, 1f);
+                gl.Vertex4f(-1.0f, 1.0f, 1.0f, 1f);
+                gl.Vertex4f(-1.0f, -1.0f, 1.0f, 1f);
+                gl.Vertex4f(1.0f, -1.0f, 1.0f, 1f);
+
+                // Back
+                gl.Normal(0f,0f,-1f);
+                gl.Vertex4f(1.0f, -1.0f, -1.0f, 1f);
+                gl.Vertex4f(-1.0f, -1.0f, -1.0f, 1f);
+                gl.Vertex4f(-1.0f, 1.0f, -1.0f, 1f);
+                gl.Vertex4f(1.0f, 1.0f, -1.0f, 1f);
+
+                // Left
+                gl.Normal(-1f,0,0);
+                gl.Vertex4f(-1.0f, 1.0f, 1.0f, 1f);
+                gl.Vertex4f(-1.0f, 1.0f, -1.0f, 1f);
+                gl.Vertex4f(-1.0f, -1.0f, -1.0f, 1f);
+                gl.Vertex4f(-1.0f, -1.0f, 1.0f, 1f);
+
+                // Right
+                gl.Normal(1f,0,0);
+                gl.Vertex4f(1.0f, 1.0f, -1.0f, 1f);
+                gl.Vertex4f(1.0f, 1.0f, 1.0f, 1f);
+                gl.Vertex4f(1.0f, -1.0f, 1.0f, 1f);
+                gl.Vertex4f(1.0f, -1.0f, -1.0f, 1f);
+                
                 gl.End();
             } else
             {
