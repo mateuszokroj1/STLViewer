@@ -28,7 +28,7 @@ namespace STL_Viewer
         private DimState state;
         private OpenFileDialog dialog = new OpenFileDialog();
         private ManipulationMode manipulating = ManipulationMode.None;
-        private double x = 0, y = 0, zoom = -4.0, rx = 20.0, ry = 20.0;
+        private double x = 0, y = 0, zoom = -4.0, scale = 1, rx = 20.0, ry = 20.0;
         private double startx = 0, starty = 0, startrx = 0, startry = 0;
         private Point clickpos;
         public ViewMode ViewMode { get; set; } = ViewMode.Material;
@@ -274,28 +274,34 @@ namespace STL_Viewer
                 }
             }
             this.x = this.y = this.rx = this.ry = 0f;
-            if (this.stl.Triangles.Length/3/4 < 1) this.zoom = 0;
+            this.zoom = -4;
+
+            // Autoscaling calculation - search maximum Absolute(x) oR Absolute(y)
+            if (this.stl.Triangles.Length/3/4 < 1) this.scale = 1;
             else
             {
-                this.zoom = 0;
+                this.scale = 1;
                 int length = this.stl.Triangles.Length / 4 / 3;
                 for (int i = 0; i < length; i++)
                 {
                     for(int j = 1; j < 4; j++)
                     {
                         double val = Math.Abs(this.stl.Triangles[i, j, 0]);
-                        if (val > this.zoom) this.zoom = val;
+                        if (val > this.scale) this.scale = val;
                         val = Math.Abs(this.stl.Triangles[i, j, 1]);
-                        if (val > this.zoom) this.zoom = val;
+                        if (val > this.scale) this.scale = val;
                     }
                 }
-                this.zoom = -this.zoom;
+                if (this.scale == 0) this.scale = 1;
+                else
+                    this.scale = 1 / this.scale;
             }
             this.taskbar.ProgressState = TaskbarItemProgressState.None;
         }
         #endregion
 
         #region OpenGL
+        // Setup OpenGL
         private void Opengl_OpenGLInitialized(object sender, SharpGL.SceneGraph.OpenGLEventArgs args)
         {
             OpenGL GL = args.OpenGL;
@@ -314,6 +320,7 @@ namespace STL_Viewer
             GL.Light(OpenGL.GL_LIGHT0, OpenGL.GL_SPECULAR, light0specular);
         }
 
+        // Rendering frame
         private void opengl_OpenGLDraw(object sender, SharpGL.SceneGraph.OpenGLEventArgs args)
         {
             OpenGL gl = args.OpenGL;
@@ -324,47 +331,60 @@ namespace STL_Viewer
             //  Load identity matrix = reset modelview
             gl.LoadIdentity();
 
-            // Drawing distance
-            gl.Frustum(-1f, 1f, -1f, 1f, 3000f, 3000f);
-            
             // View mode
             switch (ViewMode)
             {
                 case ViewMode.Material:
+                    // Turn on 3D lighting
                     gl.Enable(OpenGL.GL_LIGHTING);
                     gl.Enable(OpenGL.GL_LIGHT0);
+                    // Auto-redo normals after scaling
+                    gl.Enable(OpenGL.GL_NORMALIZE);
+                    gl.Enable(OpenGL.GL_RESCALE_NORMAL_EXT);
+                    // Set material parameters
                     gl.Material(OpenGL.GL_FRONT, OpenGL.GL_SPECULAR, 1f);
                     gl.Material(OpenGL.GL_FRONT_AND_BACK, OpenGL.GL_AMBIENT, 0);
+                    // Render mode
                     gl.PolygonMode(FaceMode.FrontAndBack, PolygonMode.Filled);
                     gl.ShadeModel(ShadeModel.Smooth);
                     break;
                 case ViewMode.BasicColor:
                     gl.Disable(OpenGL.GL_LIGHTING);
                     gl.Disable(OpenGL.GL_LIGHT0);
+                    gl.Disable(OpenGL.GL_NORMALIZE);
+                    gl.Disable(OpenGL.GL_RESCALE_NORMAL_EXT);
                     gl.PolygonMode(FaceMode.Front,PolygonMode.Filled);
+                    // Basic color RGB
                     gl.Color(1f,1f,0);
                     break;
                 case ViewMode.Mesh:
                     gl.Disable(OpenGL.GL_LIGHTING);
                     gl.Disable(OpenGL.GL_LIGHT0);
+                    gl.Disable(OpenGL.GL_NORMALIZE);
+                    gl.Disable(OpenGL.GL_RESCALE_NORMAL_EXT);
                     gl.PolygonMode(FaceMode.FrontAndBack, PolygonMode.Lines);
+                    // Lines settings
                     gl.Color(0,0,1f);
-                    gl.LineWidth(0.5f);
+                    gl.LineWidth(0.2f);
                     break;
             }
 
-            //  Moving the drawing axis
+            //  Moving the drawing axis        
             gl.Translate(this.x, this.y, this.zoom);
 
             // Rotating
             gl.Rotate ((float)this.rx, (float)this.ry, 20.0f);
 
+            // Auto scale of loaded file
+            gl.Scale(this.scale, this.scale, this.scale);
+
+            /* Models */
             if (stl == null || !stl.IsLoaded) // START SCREEN
             {
                 gl.Begin(OpenGL.GL_QUADS); // View square from 4 vertexes
 
                 // Top
-                gl.Normal(0f, 1f, 0f); // Set 
+                gl.Normal(0f, 1f, 0f); // Light reflection vector
                 gl.Vertex4f(1.0f, 1.0f, -1.0f,1f);
                 gl.Vertex4f(-1.0f, 1.0f, -1.0f, 1f);
                 gl.Vertex4f(-1.0f, 1.0f, 1.0f, 1f);
@@ -410,18 +430,17 @@ namespace STL_Viewer
             {
                 gl.Begin(BeginMode.Triangles);
                 int length = stl.Triangles.Length / 3 / 4;
-                    for (uint i = 0; i < length; i++)
-                    {
-                        gl.Normal(stl.Triangles[i,0,0], stl.Triangles[i, 0, 1], stl.Triangles[i, 0, 2]);
-                        gl.Vertex4d(stl.Triangles[i, 1, 0], stl.Triangles[i, 1, 1], stl.Triangles[i, 1, 2], 1.0);
-                        gl.Vertex4d(stl.Triangles[i, 2, 0], stl.Triangles[i, 2, 1], stl.Triangles[i, 2, 2], 1.0);
-                        gl.Vertex4d(stl.Triangles[i, 3, 0], stl.Triangles[i, 3, 1], stl.Triangles[i, 3, 2], 1.0);
-                    }
+                for (uint i = 0; i < length; i++)
+                {
+                    gl.Normal(stl.Triangles[i,0,0], stl.Triangles[i, 0, 1], stl.Triangles[i, 0, 2]);
+                    gl.Vertex4d(stl.Triangles[i, 1, 0], stl.Triangles[i, 1, 1], stl.Triangles[i, 1, 2], 1.0);
+                    gl.Vertex4d(stl.Triangles[i, 2, 0], stl.Triangles[i, 2, 1], stl.Triangles[i, 2, 2], 1.0);
+                    gl.Vertex4d(stl.Triangles[i, 3, 0], stl.Triangles[i, 3, 1], stl.Triangles[i, 3, 2], 1.0);
+                }
                 gl.End();
             }
             
-
-            //  Flush OpenGL.
+            // Calculating matrixes and sending to GPU
             gl.Flush();
             
         }
