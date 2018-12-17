@@ -13,7 +13,7 @@ namespace StlLibrary
     public abstract class StlFile
     {
         public string Header { get; set; } = string.Empty;
-        public IEnumerable<Triangle> Triangles { get; set; } = new Triangle[0];
+        public double[,,] Triangles { get; set; }
         public bool IsLoaded { get; protected set; } = false;
     }
 

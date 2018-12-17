@@ -25,37 +25,27 @@ namespace StlLibrary
                 UInt32 length = reader.ReadUInt32();
                 if (length < 1) throw new ArgumentException("Wymagany przynajmniej jeden trójkąt");
 
-                Triangle[] triangles = new Triangle[length];
-                for (uint i = 1; i <= length; i++)
-                    triangles[i] = new Triangle
-                    {
-                        Normal = new Point3D
-                        {
-                            X = reader.ReadSingle(),
-                            Y = reader.ReadSingle(),
-                            Z = reader.ReadSingle()
-                        },
-                        Vertex1 = new Point3D
-                        {
-                            X = reader.ReadSingle(),
-                            Y = reader.ReadSingle(),
-                            Z = reader.ReadSingle()
-                        },
-                        Vertex2 = new Point3D
-                        {
-                            X = reader.ReadSingle(),
-                            Y = reader.ReadSingle(),
-                            Z = reader.ReadSingle()
-                        },
-                        Vertex3 = new Point3D
-                        {
-                            X = reader.ReadSingle(),
-                            Y = reader.ReadSingle(),
-                            Z = reader.ReadSingle()
-                        },
-                        Argument = reader.ReadUInt16()
-                    };
-                base.Triangles = triangles;
+                this.Triangles = new double[length,4,3];
+                for (uint i = 0; i < length; i++)
+                {
+                    this.Triangles[i, 0, 0] = reader.ReadSingle();
+                    this.Triangles[i, 0, 1] = reader.ReadSingle();
+                    this.Triangles[i, 0, 2] = reader.ReadSingle();
+
+                    this.Triangles[i, 1, 0] = reader.ReadSingle();
+                    this.Triangles[i, 1, 1] = reader.ReadSingle();
+                    this.Triangles[i, 1, 2] = reader.ReadSingle();
+
+                    this.Triangles[i, 2, 0] = reader.ReadSingle();
+                    this.Triangles[i, 2, 1] = reader.ReadSingle();
+                    this.Triangles[i, 2, 2] = reader.ReadSingle();
+
+                    this.Triangles[i, 3, 0] = reader.ReadSingle();
+                    this.Triangles[i, 3, 1] = reader.ReadSingle();
+                    this.Triangles[i, 3, 2] = reader.ReadSingle();
+
+                    reader.ReadUInt16(); // Argument
+                }
                 this.IsLoaded = true;
             }   
         }
@@ -77,41 +67,29 @@ namespace StlLibrary
                     if (length < 1) throw new ArgumentException("Wymagany przynajmniej jeden trójkąt");
 
                     progressinfo.SetCount(length);
-                    Triangle[] triangles = new Triangle[length];
-                    Triangle newtri;
+                    this.Triangles = new double[length, 4, 3];
                     for (uint i = 0; i < length; i++)
                     {
                         if (progressinfo.Cancel) return;
-                        newtri = new Triangle();
-                        newtri.Normal = new Point3D
-                        {
-                            X = reader.ReadSingle(),
-                            Y = reader.ReadSingle(),
-                            Z = reader.ReadSingle()
-                        };
-                        newtri.Vertex1 = new Point3D
-                        {
-                            X = reader.ReadSingle(),
-                            Y = reader.ReadSingle(),
-                            Z = reader.ReadSingle()
-                        };
-                        newtri.Vertex2 = new Point3D
-                        {
-                            X = reader.ReadSingle(),
-                            Y = reader.ReadSingle(),
-                            Z = reader.ReadSingle()
-                        };
-                        newtri.Vertex3 = new Point3D
-                        {
-                            X = reader.ReadSingle(),
-                            Y = reader.ReadSingle(),
-                            Z = reader.ReadSingle()
-                        };
-                        newtri.Argument = reader.ReadUInt16();
-                        triangles[i] = newtri;
-                        progressinfo.SetCurrent(i + 1);
+                        this.Triangles[i, 0, 0] = reader.ReadSingle();
+                        this.Triangles[i, 0, 1] = reader.ReadSingle();
+                        this.Triangles[i, 0, 2] = reader.ReadSingle();
+
+                        this.Triangles[i, 1, 0] = reader.ReadSingle();
+                        this.Triangles[i, 1, 1] = reader.ReadSingle();
+                        this.Triangles[i, 1, 2] = reader.ReadSingle();
+
+                        this.Triangles[i, 2, 0] = reader.ReadSingle();
+                        this.Triangles[i, 2, 1] = reader.ReadSingle();
+                        this.Triangles[i, 2, 2] = reader.ReadSingle();
+
+                        this.Triangles[i, 3, 0] = reader.ReadSingle();
+                        this.Triangles[i, 3, 1] = reader.ReadSingle();
+                        this.Triangles[i, 3, 2] = reader.ReadSingle();
+
+                        reader.ReadUInt16(); // Argument
+                        progressinfo.SetCurrent(i+1);
                     }
-                    base.Triangles = triangles;
                     this.IsLoaded = true;
                 }
             });

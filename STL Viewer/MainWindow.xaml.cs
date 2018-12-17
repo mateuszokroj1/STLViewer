@@ -21,6 +21,7 @@ namespace STL_Viewer
     /// </summary>
     public partial class MainWindow : Window, IDisposable
     {
+        #region Fields
         private FileStream file = null;
         private StlFile stl = null;
         private Timer dimming1, dimming2;
@@ -31,12 +32,38 @@ namespace STL_Viewer
         private double startx = 0, starty = 0, startrx = 0, startry = 0;
         private Point clickpos;
         public ViewMode ViewMode { get; set; } = ViewMode.Material;
-
-        public MainWindow()
+        private bool isfullscreen;
+        public bool IsFullscreen
         {
-            InitializeComponent();
+            get => this.isfullscreen;
+            set
+            {
+                this.isfullscreen = value;
+                if (value)
+                {
+                    ResizeMode = ResizeMode.NoResize;
+                    WindowState = WindowState.Normal;
+                    WindowStyle = WindowStyle.None;
+                    Top = this.Left = 0;
+                    Width = SystemParameters.PrimaryScreenWidth;
+                    Height = SystemParameters.PrimaryScreenHeight;
+                    Topmost = true;
+                }
+                else
+                {
+                    ResizeMode = ResizeMode.CanResize;
+                    Topmost = false;
+                    WindowStyle = WindowStyle.SingleBorderWindow;
+                    Top = this.Left = 0;
+                    WindowState = WindowState.Maximized;
+                }
+            }
         }
+        #endregion
 
+        public MainWindow() => InitializeComponent();
+
+        #region Window events
         private void Window_Loaded(object sender, RoutedEventArgs e)
         {
             state = DimState.Default;
@@ -65,7 +92,19 @@ namespace STL_Viewer
                 });
             };
         }
+        private void window_MouseMove(object sender, MouseEventArgs e)
+        {
+            dimming1.Stop();
+            dimming2.Stop();
+            dimming1.Start();
+            if (this.state == DimState.Default) return;
+            this.toolBar.Visibility = Visibility.Visible;
+            this.opengl.Cursor = Cursors.Cross;
+            this.state = DimState.Default;
+        }
+        #endregion
 
+        #region Viewer manipulation
         private void ComboBox_SelectionChanged(object sender, SelectionChangedEventArgs e)
         {
             ComboBox combo = sender as ComboBox;
@@ -86,7 +125,6 @@ namespace STL_Viewer
                     return;
             }
         }
-
         private void Opengl_MouseDown(object sender, MouseButtonEventArgs e)
         {
             if (this.manipulating != ManipulationMode.None) return;
@@ -142,7 +180,13 @@ namespace STL_Viewer
                 this.zoom = Math.Min(Math.Max(-1000f, this.zoom + (e.Delta / 200f)), 200f);
             this.label2.Content = $"Zoom: {this.zoom}";
         }
+        private void Opengl_ManipulationDelta(object sender, ManipulationDeltaEventArgs e)
+        {
+            this.zoom = (float)e.CumulativeManipulation.Scale.Length;
+        }
+        #endregion
 
+        #region Loading
         private void OpenButton(object sender, RoutedEventArgs e)
         {
             dialog.CheckFileExists = true;
@@ -179,17 +223,16 @@ namespace STL_Viewer
                 this.taskbar.ProgressState = TaskbarItemProgressState.Normal;
                 progress.ProgressChanged += (sender, e) =>
                 {
-                    Dispatcher.BeginInvoke(new Action(() =>
+                    loading.Set(e.Progress);
+                    Dispatcher.Invoke(() =>
                     {
                         if (e.Progress < 1)
                             this.taskbar.ProgressValue = e.Progress;
                         else
                         {
                             this.taskbar.ProgressState = TaskbarItemProgressState.None;
-                            loading.DialogResult = true;
-                            loading.Close();
                         }
-                    }));
+                    });
                 };
                 (this.stl as StlAscii).LoadAsync(this.file, progress);
                 if (!(loading.ShowDialog() ?? false))
@@ -209,17 +252,18 @@ namespace STL_Viewer
                 loading.Owner = this.window;
                 this.taskbar.ProgressState = TaskbarItemProgressState.Normal;
                 progress.ProgressChanged += (sender, e) =>
-                Dispatcher.BeginInvoke(new Action(() =>
                 {
-                    if (e.Progress < 1)
-                        this.taskbar.ProgressValue = e.Progress;
-                    else
+                    loading.Set(e.Progress);
+                    Dispatcher.Invoke(() =>
                     {
-                        this.taskbar.ProgressState = TaskbarItemProgressState.None;
-                        loading.DialogResult = true;
-                        loading.Close();
-                    }
-                }));
+                        if (e.Progress < 1)
+                            this.taskbar.ProgressValue = e.Progress;
+                        else
+                        {
+                            this.taskbar.ProgressState = TaskbarItemProgressState.None;
+                        }
+                    });
+                };
                 (this.stl as StlBinary).LoadAsync(this.file, progress);
                 if (!(loading.ShowDialog() ?? false))
                 {
@@ -230,63 +274,28 @@ namespace STL_Viewer
                 }
             }
             this.x = this.y = this.rx = this.ry = 0f;
-            if (this.stl.Triangles.Count() < 1) this.zoom = 0;
+            if (this.stl.Triangles.Length/3/4 < 1) this.zoom = 0;
             else
             {
-                var maxvalues = this.stl.Triangles.Select(item =>
-                new
+                this.zoom = 0;
+                int length = this.stl.Triangles.Length / 4 / 3;
+                for (int i = 0; i < length; i++)
                 {
-                    X = (new double[] { Math.Abs(item.Vertex1.X), Math.Abs(item.Vertex2.X), Math.Abs(item.Vertex3.X) }).Max(),
-                    Y = (new double[] { Math.Abs(item.Vertex1.Y), Math.Abs(item.Vertex2.Y), Math.Abs(item.Vertex3.Y) }).Max()
-                });
-                double x = maxvalues.Select(item => item.X).Max();
-                double y = maxvalues.Select(item => item.Y).Max();
-                if (x > y) this.zoom = -x;
-                else this.zoom = -y;
+                    for(int j = 1; j < 4; j++)
+                    {
+                        double val = Math.Abs(this.stl.Triangles[i, j, 0]);
+                        if (val > this.zoom) this.zoom = val;
+                        val = Math.Abs(this.stl.Triangles[i, j, 1]);
+                        if (val > this.zoom) this.zoom = val;
+                    }
+                }
+                this.zoom = -this.zoom;
             }
             this.taskbar.ProgressState = TaskbarItemProgressState.None;
         }
+        #endregion
 
-        private void window_MouseMove(object sender, MouseEventArgs e)
-        {
-            dimming1.Stop();
-            dimming2.Stop();
-            dimming1.Start();
-            if (this.state == DimState.Default) return;
-            this.toolBar.Visibility = Visibility.Visible;
-            this.opengl.Cursor = Cursors.Cross;
-            this.state = DimState.Default;
-        }
-        private void Scale_MouseDoubleClick(object sender, MouseButtonEventArgs e) => (sender as Slider).Value = 0;
-
-        private bool isfullscreen;
-        public bool IsFullscreen
-        {
-            get => this.isfullscreen;
-            set
-            {
-                this.isfullscreen = value;
-                if(value)
-                {
-                    ResizeMode = ResizeMode.NoResize;
-                    WindowState = WindowState.Normal;
-                    WindowStyle = WindowStyle.None;
-                    Top = this.Left = 0;
-                    Width = SystemParameters.PrimaryScreenWidth;
-                    Height = SystemParameters.PrimaryScreenHeight;
-                    Topmost = true;
-                }
-                else
-                {
-                    ResizeMode = ResizeMode.CanResize;
-                    Topmost = false;
-                    WindowStyle = WindowStyle.SingleBorderWindow;
-                    Top = this.Left = 0;
-                    WindowState = WindowState.Maximized;
-                }
-            }
-        }
-
+        #region OpenGL
         private void Opengl_OpenGLInitialized(object sender, SharpGL.SceneGraph.OpenGLEventArgs args)
         {
             OpenGL GL = args.OpenGL;
@@ -296,18 +305,13 @@ namespace STL_Viewer
             float[] light0ambient = new float[] { 0.0f, 0.0f, 0.0f, 0f };
             float[] light0diffuse = new float[] { 1f, 1f, 0.3f, 1.0f };
             float[] light0specular = new float[] { 1f, 1f, 1f, 1.0f };
-            // Odległość rysowania
-            GL.Frustum();
+            
 
-
+            float[] light0pos = new float[] { 0.0f, 0.0f, 20.0f, 1.0f };
+            GL.Light(OpenGL.GL_LIGHT0, OpenGL.GL_POSITION, light0pos);
             GL.Light(OpenGL.GL_LIGHT0, OpenGL.GL_AMBIENT, light0ambient);
             GL.Light(OpenGL.GL_LIGHT0, OpenGL.GL_DIFFUSE, light0diffuse);
             GL.Light(OpenGL.GL_LIGHT0, OpenGL.GL_SPECULAR, light0specular);
-        }
-
-        private void Opengl_ManipulationDelta(object sender, ManipulationDeltaEventArgs e)
-        {
-            this.zoom = (float)e.CumulativeManipulation.Scale.Length;
         }
 
         private void opengl_OpenGLDraw(object sender, SharpGL.SceneGraph.OpenGLEventArgs args)
@@ -320,6 +324,10 @@ namespace STL_Viewer
             //  Load identity matrix = reset modelview
             gl.LoadIdentity();
 
+            // Drawing distance
+            gl.Frustum(-1f, 1f, -1f, 1f, 3000f, 3000f);
+            
+            // View mode
             switch (ViewMode)
             {
                 case ViewMode.Material:
@@ -347,17 +355,16 @@ namespace STL_Viewer
 
             //  Moving the drawing axis
             gl.Translate(this.x, this.y, this.zoom);
-            float[] light0pos = new float[] { 0.0f, 0.0f, 20.0f, 1.0f };
-            gl.Light(OpenGL.GL_LIGHT0, OpenGL.GL_POSITION, light0pos);
+
             // Rotating
             gl.Rotate ((float)this.rx, (float)this.ry, 20.0f);
 
             if (stl == null || !stl.IsLoaded) // START SCREEN
             {
-                gl.Begin(OpenGL.GL_QUADS);
+                gl.Begin(OpenGL.GL_QUADS); // View square from 4 vertexes
 
                 // Top
-                gl.Normal(0f, 1f, 0f);
+                gl.Normal(0f, 1f, 0f); // Set 
                 gl.Vertex4f(1.0f, 1.0f, -1.0f,1f);
                 gl.Vertex4f(-1.0f, 1.0f, -1.0f, 1f);
                 gl.Vertex4f(-1.0f, 1.0f, 1.0f, 1f);
@@ -402,13 +409,13 @@ namespace STL_Viewer
             } else
             {
                 gl.Begin(BeginMode.Triangles);
-                    gl.Color(1f,1f,1f);
-                    foreach(Triangle facet in stl.Triangles)
+                int length = stl.Triangles.Length / 3 / 4;
+                    for (uint i = 0; i < length; i++)
                     {
-                        gl.Normal(facet.Normal.X, facet.Normal.Y, facet.Normal.Z);
-                        gl.Vertex4d(facet.Vertex1.X, facet.Vertex1.Y, facet.Vertex1.Z, 1.0);
-                        gl.Vertex4d(facet.Vertex2.X, facet.Vertex2.Y, facet.Vertex2.Z, 1.0);
-                        gl.Vertex4d(facet.Vertex3.X, facet.Vertex3.Y, facet.Vertex3.Z, 1.0);
+                        gl.Normal(stl.Triangles[i,0,0], stl.Triangles[i, 0, 1], stl.Triangles[i, 0, 2]);
+                        gl.Vertex4d(stl.Triangles[i, 1, 0], stl.Triangles[i, 1, 1], stl.Triangles[i, 1, 2], 1.0);
+                        gl.Vertex4d(stl.Triangles[i, 2, 0], stl.Triangles[i, 2, 1], stl.Triangles[i, 2, 2], 1.0);
+                        gl.Vertex4d(stl.Triangles[i, 3, 0], stl.Triangles[i, 3, 1], stl.Triangles[i, 3, 2], 1.0);
                     }
                 gl.End();
             }
@@ -418,16 +425,16 @@ namespace STL_Viewer
             gl.Flush();
             
         }
+        #endregion
+
+        #region IDisposable Support
+        private bool disposedValue = false; // Aby wykryć nadmiarowe wywołania
 
         private void window_Closing(object sender, System.ComponentModel.CancelEventArgs e)
         {
             this.opengl.OpenGLDraw -= this.opengl_OpenGLDraw;
             Dispose(true);
         }
-
-        #region IDisposable Support
-        private bool disposedValue = false; // Aby wykryć nadmiarowe wywołania
-
         protected virtual void Dispose(bool disposing)
         {
             if (!disposedValue)
@@ -457,6 +464,7 @@ namespace STL_Viewer
         }
         #endregion
     }
+
     public enum DimState { Default, Dimmed1, Dimmed2 }
     public enum ManipulationMode { None, Translate, Rotate }
     public enum ViewMode { Mesh = 0, BasicColor = 1, Material = 2 }

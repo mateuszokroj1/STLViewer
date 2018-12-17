@@ -45,43 +45,27 @@ namespace StlLibrary
 
             MatchCollection facets = new Regex(@"\s*FACET\s+NORMAL\s+(?<i>\d+\.\d+)\s+(?<j>\d+\.\d+)\s+(?<k>\d+\.\d+)\s+OUTER\s+LOOP\s*(\s*VERTEX\s+(\d+\.\d+)\s+(\d+\.\d+)\s+(\d+\.\d+)\s*){3}\s+ENDLOOP\s+ENDFACET\s*").Matches(data);
             if (facets.Count < 1) throw new StlFileException("Oczekiwano minimum jednego trójkąta");
-            Triangle[] triangles = new Triangle[facets.Count];
-            uint i = 0;
-            foreach (Match facet in facets)
+            this.Triangles = new double[facets.Count,4,3];
+            for(uint i = 0; i < facets.Count; i++)
             {
-                Triangle newtri = new Triangle();
-                newtri.Normal = new Point3D
-                {
-                    X = double.Parse(facet.Groups["i"].Value, CultureInfo.InvariantCulture),
-                    Y = double.Parse(facet.Groups["j"].Value, CultureInfo.InvariantCulture),
-                    Z = double.Parse(facet.Groups["k"].Value, CultureInfo.InvariantCulture)
-                };
+                this.Triangles[i, 0, 0] = double.Parse(facets[(int)i].Groups["i"].Value, CultureInfo.InvariantCulture);
+                this.Triangles[i, 0, 1] = double.Parse(facets[(int)i].Groups["j"].Value, CultureInfo.InvariantCulture);
+                this.Triangles[i, 0, 2] = double.Parse(facets[(int)i].Groups["k"].Value, CultureInfo.InvariantCulture);
 
-                MatchCollection vertexes = new Regex(@"\s*VERTEX\s+(?<x>\d+\.\d+)\s+(?<y>\d+\.\d+)\s+(?<z>\d+\.\d+)\s*").Matches(facet.Value);
+                MatchCollection vertexes = new Regex(@"\s*VERTEX\s+(?<x>\d+\.\d+)\s+(?<y>\d+\.\d+)\s+(?<z>\d+\.\d+)\s*").Matches(facets[(int)i].Value);
 
-                newtri.Vertex1 = new Point3D
-                {
-                    X = double.Parse(vertexes[0].Groups["x"].Value, CultureInfo.InvariantCulture),
-                    Y = double.Parse(vertexes[0].Groups["y"].Value, CultureInfo.InvariantCulture),
-                    Z = double.Parse(vertexes[0].Groups["z"].Value, CultureInfo.InvariantCulture)
-                };
-                newtri.Vertex2 = new Point3D
-                {
-                    X = double.Parse(vertexes[1].Groups["x"].Value, CultureInfo.InvariantCulture),
-                    Y = double.Parse(vertexes[1].Groups["y"].Value, CultureInfo.InvariantCulture),
-                    Z = double.Parse(vertexes[1].Groups["z"].Value, CultureInfo.InvariantCulture)
-                };
-                newtri.Vertex3 = new Point3D
-                {
-                    X = double.Parse(vertexes[2].Groups["x"].Value, CultureInfo.InvariantCulture),
-                    Y = double.Parse(vertexes[2].Groups["y"].Value, CultureInfo.InvariantCulture),
-                    Z = double.Parse(vertexes[2].Groups["z"].Value, CultureInfo.InvariantCulture)
-                };
+                this.Triangles[i, 1, 0] = double.Parse(vertexes[0].Groups["x"].Value, CultureInfo.InvariantCulture);
+                this.Triangles[i, 1, 1] = double.Parse(vertexes[0].Groups["y"].Value, CultureInfo.InvariantCulture);
+                this.Triangles[i, 1, 2] = double.Parse(vertexes[0].Groups["z"].Value, CultureInfo.InvariantCulture);
 
-                triangles[i] = newtri;
-                i++;
+                this.Triangles[i, 2, 0] = double.Parse(vertexes[1].Groups["x"].Value, CultureInfo.InvariantCulture);
+                this.Triangles[i, 2, 1] = double.Parse(vertexes[1].Groups["y"].Value, CultureInfo.InvariantCulture);
+                this.Triangles[i, 2, 2] = double.Parse(vertexes[1].Groups["z"].Value, CultureInfo.InvariantCulture);
+
+                this.Triangles[i, 3, 0] = double.Parse(vertexes[2].Groups["x"].Value, CultureInfo.InvariantCulture);
+                this.Triangles[i, 3, 1] = double.Parse(vertexes[2].Groups["y"].Value, CultureInfo.InvariantCulture);
+                this.Triangles[i, 3, 2] = double.Parse(vertexes[2].Groups["z"].Value, CultureInfo.InvariantCulture);
             }
-            this.Triangles = triangles;
             this.IsLoaded = true;
         }
 
@@ -120,46 +104,30 @@ namespace StlLibrary
 
                 MatchCollection facets = new Regex(@"\s*FACET\s+NORMAL\s+(?<i>\d+\.\d+)\s+(?<j>\d+\.\d+)\s+(?<k>\d+\.\d+)\s+OUTER\s+LOOP\s*(\s*VERTEX\s+(\d+\.\d+)\s+(\d+\.\d+)\s+(\d+\.\d+)\s*){3}\s+ENDLOOP\s+ENDFACET\s*").Matches(data);
                 if (facets.Count < 1) throw new StlFileException("Oczekiwano minimum jednego trójkąta");
-                Triangle[] triangles = new Triangle[facets.Count];
-                uint i = 0;
                 progressinfo.SetCount((ulong)facets.Count);
-                foreach (Match facet in facets)
+                this.Triangles = new double[facets.Count, 4, 3];
+                for (uint i = 0; i < facets.Count; i++)
                 {
                     if (progressinfo.Cancel) return;
-                    Triangle newtri = new Triangle();
-                    newtri.Normal = new Point3D
-                    {
-                        X = double.Parse(facet.Groups["i"].Value, CultureInfo.InvariantCulture),
-                        Y = double.Parse(facet.Groups["j"].Value, CultureInfo.InvariantCulture),
-                        Z = double.Parse(facet.Groups["k"].Value, CultureInfo.InvariantCulture)
-                    };
+                    this.Triangles[i, 0, 0] = double.Parse(facets[(int)i].Groups["i"].Value, CultureInfo.InvariantCulture);
+                    this.Triangles[i, 0, 1] = double.Parse(facets[(int)i].Groups["j"].Value, CultureInfo.InvariantCulture);
+                    this.Triangles[i, 0, 2] = double.Parse(facets[(int)i].Groups["k"].Value, CultureInfo.InvariantCulture);
 
-                    MatchCollection vertexes = new Regex(@"\s*VERTEX\s+(?<x>\d+\.\d+)\s+(?<y>\d+\.\d+)\s+(?<z>\d+\.\d+)\s*").Matches(facet.Value);
+                    MatchCollection vertexes = new Regex(@"\s*VERTEX\s+(?<x>\d+\.\d+)\s+(?<y>\d+\.\d+)\s+(?<z>\d+\.\d+)\s*").Matches(facets[(int)i].Value);
 
-                    newtri.Vertex1 = new Point3D
-                    {
-                        X = double.Parse(vertexes[0].Groups["x"].Value, CultureInfo.InvariantCulture),
-                        Y = double.Parse(vertexes[0].Groups["y"].Value, CultureInfo.InvariantCulture),
-                        Z = double.Parse(vertexes[0].Groups["z"].Value, CultureInfo.InvariantCulture)
-                    };
-                    newtri.Vertex2 = new Point3D
-                    {
-                        X = double.Parse(vertexes[1].Groups["x"].Value, CultureInfo.InvariantCulture),
-                        Y = double.Parse(vertexes[1].Groups["y"].Value, CultureInfo.InvariantCulture),
-                        Z = double.Parse(vertexes[1].Groups["z"].Value, CultureInfo.InvariantCulture)
-                    };
-                    newtri.Vertex3 = new Point3D
-                    {
-                        X = double.Parse(vertexes[2].Groups["x"].Value, CultureInfo.InvariantCulture),
-                        Y = double.Parse(vertexes[2].Groups["y"].Value, CultureInfo.InvariantCulture),
-                        Z = double.Parse(vertexes[2].Groups["z"].Value, CultureInfo.InvariantCulture)
-                    };
+                    this.Triangles[i, 1, 0] = double.Parse(vertexes[0].Groups["x"].Value, CultureInfo.InvariantCulture);
+                    this.Triangles[i, 1, 1] = double.Parse(vertexes[0].Groups["y"].Value, CultureInfo.InvariantCulture);
+                    this.Triangles[i, 1, 2] = double.Parse(vertexes[0].Groups["z"].Value, CultureInfo.InvariantCulture);
 
-                    triangles[i] = newtri;
-                    i++;
-                    progressinfo.SetCurrent(i);
+                    this.Triangles[i, 2, 0] = double.Parse(vertexes[1].Groups["x"].Value, CultureInfo.InvariantCulture);
+                    this.Triangles[i, 2, 1] = double.Parse(vertexes[1].Groups["y"].Value, CultureInfo.InvariantCulture);
+                    this.Triangles[i, 2, 2] = double.Parse(vertexes[1].Groups["z"].Value, CultureInfo.InvariantCulture);
+
+                    this.Triangles[i, 3, 0] = double.Parse(vertexes[2].Groups["x"].Value, CultureInfo.InvariantCulture);
+                    this.Triangles[i, 3, 1] = double.Parse(vertexes[2].Groups["y"].Value, CultureInfo.InvariantCulture);
+                    this.Triangles[i, 3, 2] = double.Parse(vertexes[2].Groups["z"].Value, CultureInfo.InvariantCulture);
+                    progressinfo.SetCurrent(i + 1);
                 }
-                this.Triangles = triangles;
                 this.IsLoaded = true;
             });
         }

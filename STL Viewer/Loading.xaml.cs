@@ -24,5 +24,19 @@ namespace STL_Viewer
             InitializeComponent();
             this.text.Text += filename;
         }
+
+        public void Set(double value)
+        {
+            if (value < 0 || value > 1) throw new ArgumentOutOfRangeException();
+            if (value == 1)
+            {
+                Dispatcher.Invoke(() =>
+                {
+                    DialogResult = true;
+                    Close();
+                });
+            }
+            Dispatcher.Invoke(() => { this.progressbar.Value = value; });
+        }
     }
 }

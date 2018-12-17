@@ -5,13 +5,14 @@
         xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
         xmlns:local="clr-namespace:STL_Viewer"
         mc:Ignorable="d"
-        Title="Wczytywanie" Height="150" Width="318" ResizeMode="NoResize" WindowStartupLocation="CenterOwner" WindowStyle="ToolWindow">
+        Title="Wczytywanie" Height="150" Width="318" ResizeMode="NoResize" WindowStartupLocation="CenterOwner" WindowStyle="ToolWindow" UseLayoutRounding="False">
     <Grid>
         <Grid.RowDefinitions>
             <RowDefinition Height="60*"/>
             <RowDefinition Height="20*"/>
         </Grid.RowDefinitions>
         <Button Content="Anuluj" HorizontalAlignment="Center" Margin="0" VerticalAlignment="Center" Width="75" Grid.Row="1" IsDefault="True" IsCancel="True"/>
-        <TextBlock x:Name="text" Margin="0" TextWrapping="Wrap" Text="Ładowanie pliku: " TextAlignment="Center" VerticalAlignment="Center" Padding="3,0" TextTrimming="WordEllipsis"/>
+        <TextBlock x:Name="text" Margin="0,10,0,0" TextWrapping="Wrap" Text="Ładowanie pliku: " TextAlignment="Center" VerticalAlignment="Top" Padding="3,0" TextTrimming="WordEllipsis" Height="35"/>
+        <ProgressBar x:Name="progressbar" Height="15" Margin="15,0,15,25" VerticalAlignment="Bottom" Maximum="1" LargeChange="0.1" SmallChange="0.01"/>
     </Grid>
 </Window>
