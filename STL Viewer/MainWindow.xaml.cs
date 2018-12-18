@@ -276,7 +276,7 @@ namespace STL_Viewer
             this.x = this.y = this.rx = this.ry = 0f;
             this.zoom = -4;
 
-            // Autoscaling calculation - search maximum Absolute(x) oR Absolute(y)
+            // Autoscaling calculation - search maximum Absolute(x) or Absolute(y)
             if (this.stl.Triangles.Length/3/4 < 1) this.scale = 1;
             else
             {
