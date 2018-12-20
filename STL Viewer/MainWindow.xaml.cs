@@ -28,8 +28,8 @@ namespace STL_Viewer
         private DimState state;
         private OpenFileDialog dialog = new OpenFileDialog();
         private ManipulationMode manipulating = ManipulationMode.None;
-        private double x = 0, y = 0, zoom = -4.0, scale = 1, rx = 20.0, ry = 20.0;
-        private double startx = 0, starty = 0, startrx = 0, startry = 0;
+        private double x = 0, y = 0, startx = 0, starty = 0, zoom = -4.0, autoscale = 1.0;
+        private float rx = 20f, ry = 20f, rz = 20f, startrx = 0, startry = 0, startrz = 0;
         private Point clickpos;
         public ViewMode ViewMode { get; set; } = ViewMode.Material;
         private bool isfullscreen;
@@ -62,6 +62,11 @@ namespace STL_Viewer
         #endregion
 
         public MainWindow() => InitializeComponent();
+        public MainWindow(FileStream open)
+        {
+            InitializeComponent();
+            this.file = open;
+        }
 
         #region Window events
         private void Window_Loaded(object sender, RoutedEventArgs e)
@@ -91,6 +96,7 @@ namespace STL_Viewer
                     dimming2.Stop();
                 });
             };
+            if (this.file != null) Loading();
         }
         private void window_MouseMove(object sender, MouseEventArgs e)
         {
@@ -125,6 +131,8 @@ namespace STL_Viewer
                     return;
             }
         }
+
+        // Mouse
         private void Opengl_MouseDown(object sender, MouseButtonEventArgs e)
         {
             if (this.manipulating != ManipulationMode.None) return;
@@ -137,6 +145,7 @@ namespace STL_Viewer
             this.clickpos = e.GetPosition(this.opengl);
             this.startrx = this.rx;
             this.startry = this.ry;
+            this.startrz = this.rz;
         }
 
         private void Opengl_MouseUp(object sender, MouseButtonEventArgs e)
@@ -151,38 +160,56 @@ namespace STL_Viewer
                 Point pos = e.GetPosition(this.opengl);
                 if (System.Windows.Input.Keyboard.GetKeyStates(System.Windows.Input.Key.LeftCtrl) == System.Windows.Input.KeyStates.Down | System.Windows.Input.Keyboard.GetKeyStates(System.Windows.Input.Key.RightCtrl) == System.Windows.Input.KeyStates.Down)
                 {
-                    this.x = this.startx + ((pos.X - this.clickpos.X) / 500f);
-                    this.y = this.starty + -((pos.Y - this.clickpos.Y) / 500f);
+                    this.x = this.startx + ((pos.X - this.clickpos.X) / 500.0);
+                    this.y = this.starty + -((pos.Y - this.clickpos.Y) / 500.0);
                 }
                 else
                 {
-                    this.x = this.startx + ((pos.X-this.clickpos.X) / 50f);
-                    this.y = this.starty + -((pos.Y-this.clickpos.Y) / 50f);
+                    this.x = this.startx + ((pos.X-this.clickpos.X) / 50.0);
+                    this.y = this.starty + -((pos.Y-this.clickpos.Y) / 50.0);
                 }
-                this.label1.Content = $"X: {this.x}, Y: {this.y}";
             }
             else if(manipulating == ManipulationMode.Rotate)
             {
                 Point pos = e.GetPosition(this.opengl);
-                this.ry = this.startry + ((pos.X - this.clickpos.X)/5f);
-                this.rx = this.startrx + ((pos.Y - this.clickpos.Y)/5f);
-                this.label1.Content = $"RX: {rx}, RY: {ry}";
+                if (Keyboard.GetKeyStates(Key.LeftShift) == KeyStates.Down || Keyboard.GetKeyStates(Key.RightShift) == KeyStates.Down)
+                    this.rz = this.startrz + (float)((pos.X - this.clickpos.X) / 5f);
+                else
+                {
+                    this.ry = this.startry + (float)((pos.X - this.clickpos.X) / 5f);
+                    this.rx = this.startrx + (float)((pos.Y - this.clickpos.Y) / 5f);
+                }
             }
         }
 
         private void Opengl_MouseWheel(object sender, MouseWheelEventArgs e)
         {
             if(System.Windows.Input.Keyboard.GetKeyStates(System.Windows.Input.Key.LeftShift) == System.Windows.Input.KeyStates.Down | System.Windows.Input.Keyboard.GetKeyStates(System.Windows.Input.Key.RightShift) == System.Windows.Input.KeyStates.Down)
-                this.zoom = Math.Min(Math.Max(-1000f, this.zoom + (e.Delta / 2f)), 200f);
+                this.zoom = Math.Min(Math.Max(-10f, this.zoom + (e.Delta / 20f)), 200f);
             else if(System.Windows.Input.Keyboard.GetKeyStates(System.Windows.Input.Key.LeftCtrl) == System.Windows.Input.KeyStates.Down | System.Windows.Input.Keyboard.GetKeyStates(System.Windows.Input.Key.RightCtrl) == System.Windows.Input.KeyStates.Down)
-                this.zoom = Math.Min(Math.Max(-1000f, this.zoom + (e.Delta / 1000f)), 200f);
+                this.zoom = Math.Min(Math.Max(-10f, this.zoom + (e.Delta / 2000f)), 200f);
             else
-                this.zoom = Math.Min(Math.Max(-1000f, this.zoom + (e.Delta / 200f)), 200f);
-            this.label2.Content = $"Zoom: {this.zoom}";
+                this.zoom = Math.Min(Math.Max(-10f, this.zoom + (e.Delta / 200f)), 200f);
         }
+
+        // Touch
+        private void Opengl_ManipulationStarted(object sender, ManipulationStartedEventArgs e)
+        {
+            this.manipulating = ManipulationMode.Rotate;
+            this.startrx = this.rx;
+            this.startry = this.ry;
+        }
+
+        private void Opengl_ManipulationCompleted(object sender, ManipulationCompletedEventArgs e)
+        {
+            this.manipulating = ManipulationMode.None;
+        }
+
         private void Opengl_ManipulationDelta(object sender, ManipulationDeltaEventArgs e)
         {
-            this.zoom = (float)e.CumulativeManipulation.Scale.Length;
+            this.zoom = Math.Min(Math.Max(-10f, this.zoom + ((e.DeltaManipulation.Scale.X+e.DeltaManipulation.Scale.Y) / 200f)), 200f);
+            this.ry = this.startry + (float)(e.DeltaManipulation.Translation.X / 20f);
+            this.rx = this.startrx + (float)(e.DeltaManipulation.Translation.Y / 20f);
         }
         #endregion
 
@@ -274,27 +301,27 @@ namespace STL_Viewer
                 }
             }
             this.x = this.y = this.rx = this.ry = 0f;
-            this.zoom = -4;
+            this.zoom = -4.0;
 
             // Autoscaling calculation - search maximum Absolute(x) or Absolute(y)
-            if (this.stl.Triangles.Length/3/4 < 1) this.scale = 1;
+            if (this.stl.Triangles.Length/3/4 < 1) this.autoscale = 1;
             else
             {
-                this.scale = 1;
+                this.autoscale = 1;
                 int length = this.stl.Triangles.Length / 4 / 3;
                 for (int i = 0; i < length; i++)
                 {
                     for(int j = 1; j < 4; j++)
                     {
                         double val = Math.Abs(this.stl.Triangles[i, j, 0]);
-                        if (val > this.scale) this.scale = val;
+                        if (val > this.autoscale) this.autoscale = val;
                         val = Math.Abs(this.stl.Triangles[i, j, 1]);
-                        if (val > this.scale) this.scale = val;
+                        if (val > this.autoscale) this.autoscale = val;
                     }
                 }
-                if (this.scale == 0) this.scale = 1;
+                if (this.autoscale == 0) this.autoscale = 1;
                 else
-                    this.scale = 1 / this.scale;
+                    this.autoscale = 1 / this.autoscale;
             }
             this.taskbar.ProgressState = TaskbarItemProgressState.None;
         }
@@ -306,13 +333,10 @@ namespace STL_Viewer
         {
             OpenGL GL = args.OpenGL;
             GL.Enable(OpenGL.GL_DEPTH_TEST);
-            float[] global_ambient = new float[] { 0, 0f, 0f, 1.0f };
-            
-            float[] light0ambient = new float[] { 0.0f, 0.0f, 0.0f, 0f };
-            float[] light0diffuse = new float[] { 1f, 1f, 0.3f, 1.0f };
-            float[] light0specular = new float[] { 1f, 1f, 1f, 1.0f };
-            
 
+            float[] light0ambient = new float[] { 1f, 0.6f, 0f, 1f };
+            float[] light0diffuse = new float[] { 1f, 0.75f, 0f, 1.0f };
+            float[] light0specular = new float[] { 1f, 1f, 1f, 1.0f };
             float[] light0pos = new float[] { 0.0f, 0.0f, 20.0f, 1.0f };
             GL.Light(OpenGL.GL_LIGHT0, OpenGL.GL_POSITION, light0pos);
             GL.Light(OpenGL.GL_LIGHT0, OpenGL.GL_AMBIENT, light0ambient);
@@ -326,7 +350,8 @@ namespace STL_Viewer
             OpenGL gl = args.OpenGL;
 
             //  Clear the color and depth buffers
-            gl.Clear(OpenGL.GL_COLOR_BUFFER_BIT | OpenGL.GL_DEPTH_BUFFER_BIT);
+            gl.Clear(OpenGL.GL_COLOR_BUFFER_BIT | OpenGL.GL_DEPTH_BUFFER_BIT | OpenGL.GL_STENCIL_BUFFER_BIT);
+            gl.ClearColor(0,0,0,1);
 
             //  Load identity matrix = reset modelview
             gl.LoadIdentity();
@@ -336,21 +361,26 @@ namespace STL_Viewer
             {
                 case ViewMode.Material:
                     // Turn on 3D lighting
+                    
                     gl.Enable(OpenGL.GL_LIGHTING);
                     gl.Enable(OpenGL.GL_LIGHT0);
+                    gl.Disable(OpenGL.GL_SMOOTH);
+                    gl.Disable(OpenGL.GL_BLEND);
                     // Auto-redo normals after scaling
                     gl.Enable(OpenGL.GL_NORMALIZE);
                     gl.Enable(OpenGL.GL_RESCALE_NORMAL_EXT);
-                    // Set material parameters
-                    gl.Material(OpenGL.GL_FRONT, OpenGL.GL_SPECULAR, 1f);
-                    gl.Material(OpenGL.GL_FRONT_AND_BACK, OpenGL.GL_AMBIENT, 0);
+                    // Set material parameters - silver
+                    gl.Material(OpenGL.GL_FRONT_AND_BACK, OpenGL.GL_DIFFUSE, new float[] { 0.50754f, 0.50754f, 0.50754f,1f });
+                    gl.Material(OpenGL.GL_FRONT_AND_BACK, OpenGL.GL_SPECULAR, new []{ 0.508273f, 0.508273f, 0.508273f,1f });
+                    gl.Material(OpenGL.GL_FRONT_AND_BACK, OpenGL.GL_AMBIENT, new [] { 0.19225f, 0.19225f, 0.19225f,1f });
+                    gl.Material((uint)FaceMode.FrontAndBack,OpenGL.GL_SHININESS, 2f);
                     // Render mode
                     gl.PolygonMode(FaceMode.FrontAndBack, PolygonMode.Filled);
-                    gl.ShadeModel(ShadeModel.Smooth);
                     break;
                 case ViewMode.BasicColor:
                     gl.Disable(OpenGL.GL_LIGHTING);
                     gl.Disable(OpenGL.GL_LIGHT0);
+                    gl.ShadeModel(ShadeModel.Flat);
                     gl.Disable(OpenGL.GL_NORMALIZE);
                     gl.Disable(OpenGL.GL_RESCALE_NORMAL_EXT);
                     gl.PolygonMode(FaceMode.Front,PolygonMode.Filled);
@@ -358,14 +388,27 @@ namespace STL_Viewer
                     gl.Color(1f,1f,0);
                     break;
                 case ViewMode.Mesh:
+                    gl.Enable(OpenGL.GL_ALPHA_TEST);
                     gl.Disable(OpenGL.GL_LIGHTING);
                     gl.Disable(OpenGL.GL_LIGHT0);
                     gl.Disable(OpenGL.GL_NORMALIZE);
                     gl.Disable(OpenGL.GL_RESCALE_NORMAL_EXT);
+                    gl.ShadeModel(ShadeModel.Smooth);
                     gl.PolygonMode(FaceMode.FrontAndBack, PolygonMode.Lines);
-                    // Lines settings
-                    gl.Color(0,0,1f);
-                    gl.LineWidth(0.2f);
+                    // Line settings
+                    if (this.manipulating == ManipulationMode.None)
+                    {
+                        gl.Enable(OpenGL.GL_SMOOTH);
+                        gl.Enable(OpenGL.GL_LINE_SMOOTH);
+                        gl.Hint(HintTarget.LineSmooth, HintMode.Nicest);
+                    }
+                    else
+                    {
+                        gl.Disable(OpenGL.GL_SMOOTH);
+                        gl.Disable(OpenGL.GL_LINE_SMOOTH);
+                    }
+                    gl.Color(0,0.4f,1f);
+                    gl.LineWidth(0.1f);
                     break;
             }
 
@@ -373,10 +416,10 @@ namespace STL_Viewer
             gl.Translate(this.x, this.y, this.zoom);
 
             // Rotating
-            gl.Rotate ((float)this.rx, (float)this.ry, 20.0f);
+            gl.Rotate (this.rx, this.ry, this.rz);
 
             // Auto scale of loaded file
-            gl.Scale(this.scale, this.scale, this.scale);
+            gl.Scale(this.autoscale, this.autoscale, this.autoscale);
 
             /* Models */
             if (stl == null || !stl.IsLoaded) // START SCREEN
@@ -385,7 +428,7 @@ namespace STL_Viewer
 
                 // Top
                 gl.Normal(0f, 1f, 0f); // Light reflection vector
-                gl.Vertex4f(1.0f, 1.0f, -1.0f,1f);
+                gl.Vertex4f(1.0f, 1.0f, -1.0f,1f); // Homogeneous coordinates
                 gl.Vertex4f(-1.0f, 1.0f, -1.0f, 1f);
                 gl.Vertex4f(-1.0f, 1.0f, 1.0f, 1f);
                 gl.Vertex4f(1.0f, 1.0f, 1.0f, 1f);
@@ -439,7 +482,6 @@ namespace STL_Viewer
                 }
                 gl.End();
             }
-            
             // Calculating matrixes and sending to GPU
             gl.Flush();
             

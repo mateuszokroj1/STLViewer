@@ -24,8 +24,6 @@
                 <ComboBoxItem Content="Materiał" IsSelected="True"/>
             </ComboBox>
         </ToolBar>
-        <sharpGL:OpenGLControl x:Name="opengl" OpenGLDraw="opengl_OpenGLDraw" Panel.ZIndex="0" MouseDown="Opengl_MouseDown" MouseUp="Opengl_MouseUp" MouseMove="Opengl_MouseMove" MouseWheel="Opengl_MouseWheel" OpenGLInitialized="Opengl_OpenGLInitialized" ManipulationDelta="Opengl_ManipulationDelta" IsManipulationEnabled="True" OpenGLVersion="OpenGL4_0" TabIndex="5" />
-        <Label x:Name="label1" Content="Position" HorizontalAlignment="Left" Margin="1,0,0,0" VerticalAlignment="Bottom" Panel.ZIndex="4" Foreground="White"/>
-        <Label x:Name="label2" Content="Zoom" HorizontalAlignment="Right" Margin="0,1,0,0" VerticalAlignment="Bottom" Foreground="White" Panel.ZIndex="4"/>
+        <sharpGL:OpenGLControl x:Name="opengl" OpenGLDraw="opengl_OpenGLDraw" Panel.ZIndex="0" MouseDown="Opengl_MouseDown" MouseUp="Opengl_MouseUp" MouseMove="Opengl_MouseMove" MouseWheel="Opengl_MouseWheel" OpenGLInitialized="Opengl_OpenGLInitialized" ManipulationDelta="Opengl_ManipulationDelta" IsManipulationEnabled="True" OpenGLVersion="OpenGL4_0" TabIndex="5" ManipulationStarted="Opengl_ManipulationStarted" ManipulationCompleted="Opengl_ManipulationCompleted" />
     </Grid>
 </Window>
