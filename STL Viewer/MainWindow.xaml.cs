@@ -158,7 +158,7 @@ namespace STL_Viewer
             if(manipulating == ManipulationMode.Translate)
             {
                 Point pos = e.GetPosition(this.opengl);
-                if (System.Windows.Input.Keyboard.GetKeyStates(System.Windows.Input.Key.LeftCtrl) == System.Windows.Input.KeyStates.Down | System.Windows.Input.Keyboard.GetKeyStates(System.Windows.Input.Key.RightCtrl) == System.Windows.Input.KeyStates.Down)
+                if (Keyboard.GetKeyStates(Key.LeftCtrl).HasFlag(KeyStates.Down) || Keyboard.GetKeyStates(Key.RightCtrl).HasFlag(KeyStates.Down))
                 {
                     this.x = this.startx + ((pos.X - this.clickpos.X) / 500.0);
                     this.y = this.starty + -((pos.Y - this.clickpos.Y) / 500.0);
@@ -172,7 +172,7 @@ namespace STL_Viewer
             else if(manipulating == ManipulationMode.Rotate)
             {
                 Point pos = e.GetPosition(this.opengl);
-                if (Keyboard.GetKeyStates(Key.LeftShift) == KeyStates.Down || Keyboard.GetKeyStates(Key.RightShift) == KeyStates.Down)
+                if (Keyboard.GetKeyStates(Key.LeftShift).HasFlag(KeyStates.Down) || Keyboard.GetKeyStates(Key.RightShift).HasFlag(KeyStates.Down))
                     this.rz = this.startrz + (float)((pos.X - this.clickpos.X) / 5f);
                 else
                 {
