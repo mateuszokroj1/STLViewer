@@ -46,13 +46,13 @@ namespace StlLibrary
             MatchCollection facets = new Regex(@"\s*FACET\s+NORMAL\s+(?<i>\d+\.\d+)\s+(?<j>\d+\.\d+)\s+(?<k>\d+\.\d+)\s+OUTER\s+LOOP\s*(\s*VERTEX\s+(\d+\.\d+)\s+(\d+\.\d+)\s+(\d+\.\d+)\s*){3}\s+ENDLOOP\s+ENDFACET\s*").Matches(data);
             if (facets.Count < 1) throw new StlFileException("Oczekiwano minimum jednego trójkąta");
             this.Triangles = new double[facets.Count,4,3];
-            for(uint i = 0; i < facets.Count; i++)
+            var res = Parallel.For(0, facets.Count, new Action<int>(i =>
             {
-                this.Triangles[i, 0, 0] = double.Parse(facets[(int)i].Groups["i"].Value, CultureInfo.InvariantCulture);
-                this.Triangles[i, 0, 1] = double.Parse(facets[(int)i].Groups["j"].Value, CultureInfo.InvariantCulture);
-                this.Triangles[i, 0, 2] = double.Parse(facets[(int)i].Groups["k"].Value, CultureInfo.InvariantCulture);
+                this.Triangles[i, 0, 0] = double.Parse(facets[i].Groups["i"].Value, CultureInfo.InvariantCulture);
+                this.Triangles[i, 0, 1] = double.Parse(facets[i].Groups["j"].Value, CultureInfo.InvariantCulture);
+                this.Triangles[i, 0, 2] = double.Parse(facets[i].Groups["k"].Value, CultureInfo.InvariantCulture);
 
-                MatchCollection vertexes = new Regex(@"\s*VERTEX\s+(?<x>\d+\.\d+)\s+(?<y>\d+\.\d+)\s+(?<z>\d+\.\d+)\s*").Matches(facets[(int)i].Value);
+                MatchCollection vertexes = new Regex(@"\s*VERTEX\s+(?<x>\d+\.\d+)\s+(?<y>\d+\.\d+)\s+(?<z>\d+\.\d+)\s*").Matches(facets[i].Value);
 
                 this.Triangles[i, 1, 0] = double.Parse(vertexes[0].Groups["x"].Value, CultureInfo.InvariantCulture);
                 this.Triangles[i, 1, 1] = double.Parse(vertexes[0].Groups["y"].Value, CultureInfo.InvariantCulture);
@@ -65,7 +65,7 @@ namespace StlLibrary
                 this.Triangles[i, 3, 0] = double.Parse(vertexes[2].Groups["x"].Value, CultureInfo.InvariantCulture);
                 this.Triangles[i, 3, 1] = double.Parse(vertexes[2].Groups["y"].Value, CultureInfo.InvariantCulture);
                 this.Triangles[i, 3, 2] = double.Parse(vertexes[2].Groups["z"].Value, CultureInfo.InvariantCulture);
-            }
+            }));
             this.IsLoaded = true;
         }
 

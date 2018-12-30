@@ -12,7 +12,7 @@ using System.Windows.Media;
 using System.Windows.Media.Imaging;
 using System.Windows.Shapes;
 
-namespace STL_Viewer
+namespace StlViewer
 {
     /// <summary>
     /// Logika interakcji dla klasy Loading.xaml
@@ -22,7 +22,7 @@ namespace STL_Viewer
         public Loading(string filename)
         {
             InitializeComponent();
-            this.text.Text += filename;
+            this.text.Text = FindResource("Loading_text") as string + filename;
         }
 
         public void Set(double value)

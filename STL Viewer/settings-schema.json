@@ -1,0 +1,14 @@
+{
+  "$schema": "http://json-schema.org/draft-04/schema",
+  "title": "STL Viewer Settings JSON Schema",
+
+  "type": "object",
+  "required": ["lang"],
+  "properties": {
+    "lang": {
+      "type": "string",
+      "description": "Language of the UI",
+      "pattern": "^([A-z]{2})(-[A-z]{2})?$"
+    }
+  }
+}

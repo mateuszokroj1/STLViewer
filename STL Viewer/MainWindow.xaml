@@ -4,24 +4,26 @@
         xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
         xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
         xmlns:sharpGL="clr-namespace:SharpGL.WPF;assembly=SharpGL.WPF"
-        xmlns:local="clr-namespace:STL_Viewer"
+        xmlns:local="clr-namespace:StlViewer"
         xmlns:ei="http://schemas.microsoft.com/expression/2010/interactions" x:Name="window"
-        x:Class="STL_Viewer.MainWindow"
+        x:Class="StlViewer.MainWindow"
+        xmlns:res="clr-namespace:StlViewer.Properties"
         mc:Ignorable="d"
+        Language="{}"
         Title="STL Viewer" Height="392" Width="525" Loaded="Window_Loaded" MouseMove="window_MouseMove" Closing="window_Closing">
     <Window.TaskbarItemInfo>
         <TaskbarItemInfo x:Name="taskbar" />
     </Window.TaskbarItemInfo>
     <Grid>
-        <ToolBar x:Name="toolBar" Height="25" Width="248" HorizontalAlignment="Center" VerticalAlignment="Top" Margin="0,10,0,0" Panel.ZIndex="10" TabIndex="0">
-            <Button Content="Otwórz STL..." Click="OpenButton" TabIndex="1"/>
+        <ToolBar x:Name="toolBar" Height="25" HorizontalAlignment="Center" VerticalAlignment="Top" Margin="0,10,0,0" Panel.ZIndex="10" TabIndex="0">
+            <Button Content="{DynamicResource OpenButton}" Click="OpenButton" TabIndex="1"/>
             <Separator/>
-            <CheckBox x:Name="fullscreen" Content="Pełny ekran" IsChecked="{Binding IsFullscreen, ElementName=window, Mode=OneWayToSource}" TabIndex="2"/>
+            <CheckBox x:Name="fullscreen" Content="{DynamicResource FullscreenCheckbox}" IsChecked="{Binding IsFullscreen, ElementName=window, Mode=OneWayToSource}" TabIndex="2"/>
             <Separator/>
             <ComboBox SelectedIndex="2" Margin="0" Width="71" IsReadOnly="True" SelectionChanged="ComboBox_SelectionChanged" TabIndex="3">
-                <ComboBoxItem Content="Siatka"/>
-                <ComboBoxItem Content="Kolor podstawowy"/>
-                <ComboBoxItem Content="Materiał" IsSelected="True"/>
+                <ComboBoxItem Content="{DynamicResource ViewMode_Mesh}" />
+                <ComboBoxItem Content="{DynamicResource ViewMode_BasicColor}" />
+                <ComboBoxItem Content="{DynamicResource ViewMode_Material}" IsSelected="True" />
             </ComboBox>
         </ToolBar>
         <sharpGL:OpenGLControl x:Name="opengl" OpenGLDraw="opengl_OpenGLDraw" Panel.ZIndex="0" MouseDown="Opengl_MouseDown" MouseUp="Opengl_MouseUp" MouseMove="Opengl_MouseMove" MouseWheel="Opengl_MouseWheel" OpenGLInitialized="Opengl_OpenGLInitialized" ManipulationDelta="Opengl_ManipulationDelta" IsManipulationEnabled="True" OpenGLVersion="OpenGL4_0" TabIndex="5" ManipulationStarted="Opengl_ManipulationStarted" ManipulationCompleted="Opengl_ManipulationCompleted" />

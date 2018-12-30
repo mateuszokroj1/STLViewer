@@ -14,7 +14,7 @@ using SharpGL.Enumerations;
 
 using StlLibrary;
 
-namespace STL_Viewer
+namespace StlViewer
 {
     /// <summary>
     /// Logika interakcji dla klasy MainWindow.xaml
@@ -24,15 +24,21 @@ namespace STL_Viewer
         #region Fields
         private FileStream file = null;
         private StlFile stl = null;
-        private Timer dimming1, dimming2;
-        private DimState state;
+        private Timer dimming1, dimming2; // Trigger for change window style
+        private DimState state; // Window state
         private OpenFileDialog dialog = new OpenFileDialog();
+        // Mouse manipulation
         private ManipulationMode manipulating = ManipulationMode.None;
         private double x = 0, y = 0, startx = 0, starty = 0, zoom = -4.0, autoscale = 1.0;
         private float rx = 20f, ry = 20f, rz = 20f, startrx = 0, startry = 0, startrz = 0;
         private Point clickpos;
         public ViewMode ViewMode { get; set; } = ViewMode.Material;
+
+
         private bool isfullscreen;
+        /// <summary>
+        /// Setting fullscreen mode
+        /// </summary>
         public bool IsFullscreen
         {
             get => this.isfullscreen;
@@ -148,14 +154,11 @@ namespace STL_Viewer
             this.startrz = this.rz;
         }
 
-        private void Opengl_MouseUp(object sender, MouseButtonEventArgs e)
-        {
-            manipulating = ManipulationMode.None;
-        }
+        private void Opengl_MouseUp(object sender, MouseButtonEventArgs e) { manipulating = ManipulationMode.None; }
 
         private void Opengl_MouseMove(object sender, MouseEventArgs e)
         {
-            if(manipulating == ManipulationMode.Translate)
+            if(manipulating == ManipulationMode.Translate) // Moving object
             {
                 Point pos = e.GetPosition(this.opengl);
                 if (Keyboard.GetKeyStates(Key.LeftCtrl).HasFlag(KeyStates.Down) || Keyboard.GetKeyStates(Key.RightCtrl).HasFlag(KeyStates.Down))
@@ -169,7 +172,7 @@ namespace STL_Viewer
                     this.y = this.starty + -((pos.Y-this.clickpos.Y) / 50.0);
                 }
             }
-            else if(manipulating == ManipulationMode.Rotate)
+            else if(manipulating == ManipulationMode.Rotate) // Rotating
             {
                 Point pos = e.GetPosition(this.opengl);
                 if (Keyboard.GetKeyStates(Key.LeftShift).HasFlag(KeyStates.Down) || Keyboard.GetKeyStates(Key.RightShift).HasFlag(KeyStates.Down))
@@ -245,8 +248,7 @@ namespace STL_Viewer
             {
                 this.stl = new StlAscii();
                 Progress progress = new Progress();
-                Loading loading = new Loading(file.Name);
-                loading.Owner = this.window;
+                Loading loading = new Loading(file.Name) { Owner = this.window, ShowInTaskbar = false };
                 this.taskbar.ProgressState = TaskbarItemProgressState.Normal;
                 progress.ProgressChanged += (sender, e) =>
                 {
@@ -274,9 +276,7 @@ namespace STL_Viewer
             {
                 this.stl = new StlBinary();
                 Progress progress = new Progress();
-                Loading loading = new Loading(this.file.Name);
-                loading.ShowInTaskbar = false;
-                loading.Owner = this.window;
+                Loading loading = new Loading(this.file.Name) { ShowInTaskbar = false, Owner = this.window };
                 this.taskbar.ProgressState = TaskbarItemProgressState.Normal;
                 progress.ProgressChanged += (sender, e) =>
                 {
@@ -304,7 +304,7 @@ namespace STL_Viewer
             this.zoom = -4.0;
 
             // Autoscaling calculation - search maximum Absolute(x) or Absolute(y)
-            if (this.stl.Triangles.Length/3/4 < 1) this.autoscale = 1;
+            if (this.stl == null || this.file == null || this.stl.Triangles.Length/3/4 < 1) this.autoscale = 1;
             else
             {
                 this.autoscale = 1;
