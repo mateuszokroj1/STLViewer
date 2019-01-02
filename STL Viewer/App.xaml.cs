@@ -1,6 +1,8 @@
 ﻿using System;
+using System.Diagnostics;
 using System.Globalization;
 using System.IO;
+using System.Linq;
 using System.Resources;
 using System.Text;
 using System.Threading;
@@ -107,14 +109,22 @@ namespace StlViewer
             }
             catch(Exception exc)
             {
+                EventLog log = EventLog.GetEventLogs().Where(item => item.Log.ToLowerInvariant().StartsWith("appl") || item.Log.ToLowerInvariant().StartsWith("apli")).First();
+                log.Source = "STL Viewer";
+                log?.WriteEntry($"{exc.GetType().Name}: \"{exc.Message}\",{Environment.NewLine}StackTrace: \"{exc.StackTrace}\"", EventLogEntryType.Error);
                 MessageBox.Show(string.Format(FindResource("Exception_message").ToString(), exc.GetType().Name, exc.Message), "STL Viewer", MessageBoxButton.OK, MessageBoxImage.Error);
+                log?.Close();
                 Shutdown(1);
             }
         }
 
         private void Application_DispatcherUnhandledException(object sender, System.Windows.Threading.DispatcherUnhandledExceptionEventArgs e)
         {
+            EventLog log = EventLog.GetEventLogs().Where(item => item.Log.ToLowerInvariant().StartsWith("appl") || item.Log.ToLowerInvariant().StartsWith("apli")).First();
+            log.Source = "STL Viewer";
+            log?.WriteEntry($"{e.Exception.GetType().Name}: \"{e.Exception.Message}\",{Environment.NewLine}StackTrace: \"{e.Exception.StackTrace}\"", EventLogEntryType.Error);
             MessageBox.Show(string.Format(FindResource("Exception_message").ToString(), e.Exception.GetType().Name, e.Exception.Message), "STL Viewer", MessageBoxButton.OK, MessageBoxImage.Error);
+            log?.Close();
             Shutdown(1);
         }
     }

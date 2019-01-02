@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Diagnostics;
 using System.IO;
 using System.Linq;
 using System.Timers;
@@ -344,7 +345,11 @@ namespace StlViewer
             }
             catch(Exception exc)
             {
+                EventLog log = EventLog.GetEventLogs().Where(item => item.Log.ToLowerInvariant().StartsWith("appl") || item.Log.ToLowerInvariant().StartsWith("apli")).First();
+                log.Source = "STL Viewer";
+                log?.WriteEntry($"{exc.GetType().Name}: \"{exc.Message}\",{Environment.NewLine}StackTrace: \"{exc.StackTrace}\"", EventLogEntryType.Error);
                 MessageBox.Show(string.Format(FindResource("Exception_message").ToString(), exc.GetType().Name, exc.Message), "STL Viewer", MessageBoxButton.OK, MessageBoxImage.Error);
+                log?.Close();
                 Application.Current.Shutdown(1);
             }
         }
