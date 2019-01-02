@@ -1,12 +1,9 @@
 ﻿using System;
-using System.Collections.Generic;
-using System.Linq;
+using System.Globalization;
+using System.IO;
 using System.Text;
 using System.Text.RegularExpressions;
-using System.IO;
 using System.Threading.Tasks;
-using System.Windows.Media.Media3D;
-using System.Globalization;
 
 namespace StlLibrary
 {
@@ -17,14 +14,14 @@ namespace StlLibrary
         public void Load(FileStream file)
         {
             if (file == null) throw new ArgumentNullException();
-            if (!file.CanRead || file.Length < 4) throw new ArgumentException("Nie można odczytać lub niepoprawny plik");
+            if (!file.CanRead || file.Length < 4) throw new ArgumentException("Can not read or incorrect file");
             string data;
             byte[] ascii = new byte[file.Length];
             file.Position = 0;
             for (ulong j = 0; (long)j < file.Length; j++)
             {
                 int c = file.ReadByte();
-                if (c < 0 || c > 255) break;
+                if (c < 0 || c > 127) break;
                 ascii[j] = Convert.ToByte(c);
             }
             data = Encoding.ASCII.GetString(ascii);
@@ -38,13 +35,14 @@ namespace StlLibrary
 
             Regex re = new Regex(@"^SOLID\s+(?<name1>[A-Z0-9_-]+)\s*(\s*FACET\s+NORMAL\s+(\d+\.\d+)\s+(\d+\.\d+)\s+(\d+\.\d+)\s+OUTER\s+LOOP\s*(\s*VERTEX\s+(\d+\.\d+)\s+(\d+\.\d+)\s+(\d+\.\d+)\s*){3}\s+ENDLOOP\s+ENDFACET\s*)+\s*ENDSOLID\s+(?<name2>[A-Z0-9_-]+)$");
             Match match = re.Match(data);
-            if (match == null || !match.Success) throw new StlFileException("Niepoprawny format pliku ASCII");
+            if (match == null || !match.Success) throw new StlFileException("Incorrect ASCII file format");
 
             string name1 = match.Groups["name1"].Captures[0].Value, name2 = match.Groups["name2"].Captures[0].Value;
-            if (!name1.Equals(name2)) throw new StlFileException($"SOLID \"{name1}\" nie został poprawnie zakończony");
+            if (!name1.Equals(name2)) throw new StlFileException($"SOLID \"{name1}\" has not been properly completed");
 
+            // Read facets
             MatchCollection facets = new Regex(@"\s*FACET\s+NORMAL\s+(?<i>\d+\.\d+)\s+(?<j>\d+\.\d+)\s+(?<k>\d+\.\d+)\s+OUTER\s+LOOP\s*(\s*VERTEX\s+(\d+\.\d+)\s+(\d+\.\d+)\s+(\d+\.\d+)\s*){3}\s+ENDLOOP\s+ENDFACET\s*").Matches(data);
-            if (facets.Count < 1) throw new StlFileException("Oczekiwano minimum jednego trójkąta");
+            if (facets.Count < 1) throw new StlFileException("A minimum one triangle was expected");
             this.Triangles = new double[facets.Count,4,3];
             var res = Parallel.For(0, facets.Count, new Action<int>(i =>
             {
@@ -52,6 +50,7 @@ namespace StlLibrary
                 this.Triangles[i, 0, 1] = double.Parse(facets[i].Groups["j"].Value, CultureInfo.InvariantCulture);
                 this.Triangles[i, 0, 2] = double.Parse(facets[i].Groups["k"].Value, CultureInfo.InvariantCulture);
 
+                // Read vertexes
                 MatchCollection vertexes = new Regex(@"\s*VERTEX\s+(?<x>\d+\.\d+)\s+(?<y>\d+\.\d+)\s+(?<z>\d+\.\d+)\s*").Matches(facets[i].Value);
 
                 this.Triangles[i, 1, 0] = double.Parse(vertexes[0].Groups["x"].Value, CultureInfo.InvariantCulture);
@@ -71,11 +70,11 @@ namespace StlLibrary
 
         public Task LoadAsync(FileStream file, Progress progressinfo)
         {
-            if (progressinfo == null) progressinfo = new StlLibrary.Progress();
+            if (progressinfo == null) progressinfo = new Progress();
             return Task.Run(()=>
             {
                 if (file == null) throw new ArgumentNullException();
-                if (!file.CanRead || file.Length < 4) throw new ArgumentException("Nie można odczytać lub niepoprawny plik");
+                if (!file.CanRead || file.Length < 4) throw new ArgumentException("Can not read or incorrect file");
                 string data;
                 byte[] ascii = new byte[file.Length];
                 file.Position = 0;
@@ -97,13 +96,13 @@ namespace StlLibrary
 
                 Regex re = new Regex(@"^SOLID\s+(?<name1>[A-Z0-9_-]+)\s*(\s*FACET\s+NORMAL\s+(\d+\.\d+)\s+(\d+\.\d+)\s+(\d+\.\d+)\s+OUTER\s+LOOP\s*(\s*VERTEX\s+(\d+\.\d+)\s+(\d+\.\d+)\s+(\d+\.\d+)\s*){3}\s+ENDLOOP\s+ENDFACET\s*)+\s*ENDSOLID\s+(?<name2>[A-Z0-9_-]+)$");
                 Match match = re.Match(data);
-                if (match == null || !match.Success) throw new StlFileException("Niepoprawny format pliku ASCII");
+                if (match == null || !match.Success) throw new StlFileException("Incorrect ASCII file format");
 
                 string name1 = match.Groups["name1"].Captures[0].Value, name2 = match.Groups["name2"].Captures[0].Value;
                 if (!name1.Equals(name2)) throw new StlFileException($"SOLID \"{name1}\" nie został poprawnie zakończony");
 
                 MatchCollection facets = new Regex(@"\s*FACET\s+NORMAL\s+(?<i>\d+\.\d+)\s+(?<j>\d+\.\d+)\s+(?<k>\d+\.\d+)\s+OUTER\s+LOOP\s*(\s*VERTEX\s+(\d+\.\d+)\s+(\d+\.\d+)\s+(\d+\.\d+)\s*){3}\s+ENDLOOP\s+ENDFACET\s*").Matches(data);
-                if (facets.Count < 1) throw new StlFileException("Oczekiwano minimum jednego trójkąta");
+                if (facets.Count < 1) throw new StlFileException("A minimum one triangle was expected");
                 progressinfo.SetCount((ulong)facets.Count);
                 this.Triangles = new double[facets.Count, 4, 3];
                 for (uint i = 0; i < facets.Count; i++)

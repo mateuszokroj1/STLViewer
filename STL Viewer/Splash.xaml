@@ -1,0 +1,12 @@
+﻿<Window x:Class="StlViewer.Splash"
+        xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+        xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+        xmlns:local="clr-namespace:StlViewer"
+        mc:Ignorable="d"
+        Title="STL Viewer" Height="Auto" Width="Auto" AllowsTransparency="True"  MaxHeight="1024" MaxWidth="1024" VerticalContentAlignment="Center" HorizontalContentAlignment="Center" WindowStartupLocation="CenterScreen" ShowInTaskbar="False" ResizeMode="NoResize" WindowStyle="None">
+    <Window.Background>
+        <ImageBrush ImageSource="Logo.png" Stretch="Uniform"/>
+    </Window.Background>
+</Window>

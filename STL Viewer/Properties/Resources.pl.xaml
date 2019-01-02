@@ -2,12 +2,24 @@
                     xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
                     xmlns:local="clr-namespace:StlViewer.Properties"
                     xmlns:system="clr-namespace:System;assembly=mscorlib">
+    <!-- Main Window -->
     <system:String x:Key="FullscreenCheckbox">Pełny ekran</system:String>
     <system:String x:Key="OpenButton">Otwórz STL...</system:String>
     <system:String x:Key="ViewMode_BasicColor">Kolor podstawowy</system:String>
     <system:String x:Key="ViewMode_Material">Materiał</system:String>
     <system:String x:Key="ViewMode_Mesh">Siatka</system:String>
+    <!-- Loading -->
     <system:String x:Key="Loading_Title">Wczytywanie</system:String>
-    <system:String x:Key="Loading_text">Ładowanie pliku: </system:String>
+    <system:String x:Key="Loading_text">Ładowanie pliku:&#32;</system:String>
     <system:String x:Key="Loading_cancel">Anuluj</system:String>
+    <!-- File Open Dialog -->
+    <system:String x:Key="OpenFileDialog_Title">Otwórz plik STL</system:String>
+    <!-- Messages -->
+    <system:String x:Key="FileReadError">Błąd odczytu pliku:\n\rType: {0}\n\rMessage: {1}</system:String>
+    <system:String x:Key="BadArgument">Nieprawidłowy plik podany w pierwszym argumencie</system:String>
+    <system:String x:Key="FileCantRead">Pliku nie można odczytać</system:String>
+    <system:String x:Key="ReadError">Błąd odczytu</system:String>
+    <system:String x:Key="StlException_message">Błąd w strukturze pliku STL: {0}</system:String>
+    <system:String x:Key="IOException_message">Wystąpił problem podczas odczytu z pliku: {0}. {1}</system:String>
+    <system:String x:Key="Exception_message">Wystąpił nieoczekiwany problem, który uniemożliwia dalszą pracę aplikacji. {0}. {1}</system:String>
 </ResourceDictionary>

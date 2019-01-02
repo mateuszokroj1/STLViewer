@@ -228,102 +228,125 @@ namespace StlViewer
             if (!dialog.ShowDialog(this) ?? false || dialog.FileNames.Length < 1 || !File.Exists(dialog.FileName)) return;
             this.file?.Close();
             try { file = new FileStream(dialog.FileName, FileMode.Open, FileAccess.Read, FileShare.Read); }
-            catch(IOException exc) { MessageBox.Show($"Wystąpił błąd podczas odczytu pliku: {exc.Message}", "Błąd odczytu", MessageBoxButton.OK, MessageBoxImage.Error); file = null; }
-            if(!file.CanRead) { MessageBox.Show("Pliku nie można odczytać", "Błąd odczytu", MessageBoxButton.OK, MessageBoxImage.Error); file = null; }
+            catch(IOException exc) { MessageBox.Show(string.Format(FindResource("FileReadError").ToString(), exc.GetType().Name, exc.Message), "Błąd odczytu", MessageBoxButton.OK, MessageBoxImage.Error); file = null; }
+            if(!file.CanRead) { MessageBox.Show(FindResource("FileCantRead").ToString(), FindResource("ReadError").ToString(), MessageBoxButton.OK, MessageBoxImage.Error); file = null; }
             Loading();
         }
 
         private void Loading()
         {
-            if (this.file == null || !this.file.CanRead) return;
-            bool ascii = true;
-            for (uint i = 0; i < file.Length; i++)
-                if (file.ReadByte() > 128)
-                {
-                    ascii = false;
-                    break;
-                }
+            try
+            {
+                if (this.file == null || !this.file.CanRead) return;
+                // Wykrywanie bajtu poza zakresem standardowego ASCII (0-127)
+                bool ascii = true;
+                for (uint i = 0; i < file.Length; i++)
+                    if (file.ReadByte() > 128)
+                    {
+                        ascii = false;
+                        break;
+                    }
 
-            if (ascii)
-            {
-                this.stl = new StlAscii();
-                Progress progress = new Progress();
-                Loading loading = new Loading(file.Name) { Owner = this.window, ShowInTaskbar = false };
-                this.taskbar.ProgressState = TaskbarItemProgressState.Normal;
-                progress.ProgressChanged += (sender, e) =>
+                if (ascii) // Odczyt ASCII
                 {
-                    loading.Set(e.Progress);
-                    Dispatcher.Invoke(() =>
+                    this.stl = new StlAscii();
+                    Progress progress = new Progress();
+                    Loading loading = new Loading(file.Name) { Owner = this.window, ShowInTaskbar = false };
+                    this.taskbar.ProgressState = TaskbarItemProgressState.Normal;
+                    progress.ProgressChanged += (sender, e) =>
                     {
-                        if (e.Progress < 1)
-                            this.taskbar.ProgressValue = e.Progress;
-                        else
+                        loading.Set(e.Progress);
+                        Dispatcher.Invoke(() =>
                         {
-                            this.taskbar.ProgressState = TaskbarItemProgressState.None;
-                        }
-                    });
-                };
-                (this.stl as StlAscii).LoadAsync(this.file, progress);
-                if (!(loading.ShowDialog() ?? false))
-                {
-                    progress.Cancel = true;
-                    this.file?.Close();
-                    this.file = null;
-                    this.stl = null;
-                }
-            }
-            else
-            {
-                this.stl = new StlBinary();
-                Progress progress = new Progress();
-                Loading loading = new Loading(this.file.Name) { ShowInTaskbar = false, Owner = this.window };
-                this.taskbar.ProgressState = TaskbarItemProgressState.Normal;
-                progress.ProgressChanged += (sender, e) =>
-                {
-                    loading.Set(e.Progress);
-                    Dispatcher.Invoke(() =>
+                            if (e.Progress < 1)
+                                this.taskbar.ProgressValue = e.Progress;
+                            else
+                            {
+                                this.taskbar.ProgressState = TaskbarItemProgressState.None;
+                            }
+                        });
+                    };
+                    (this.stl as StlAscii).LoadAsync(this.file, progress);
+                    if (!(loading.ShowDialog() ?? false))
                     {
-                        if (e.Progress < 1)
-                            this.taskbar.ProgressValue = e.Progress;
-                        else
-                        {
-                            this.taskbar.ProgressState = TaskbarItemProgressState.None;
-                        }
-                    });
-                };
-                (this.stl as StlBinary).LoadAsync(this.file, progress);
-                if (!(loading.ShowDialog() ?? false))
-                {
-                    progress.Cancel = true;
-                    this.file?.Close();
-                    this.file = null;
-                    this.stl = null;
-                }
-            }
-            this.x = this.y = this.rx = this.ry = 0f;
-            this.zoom = -4.0;
-
-            // Autoscaling calculation - search maximum Absolute(x) or Absolute(y)
-            if (this.stl == null || this.file == null || this.stl.Triangles.Length/3/4 < 1) this.autoscale = 1;
-            else
-            {
-                this.autoscale = 1;
-                int length = this.stl.Triangles.Length / 4 / 3;
-                for (int i = 0; i < length; i++)
-                {
-                    for(int j = 1; j < 4; j++)
-                    {
-                        double val = Math.Abs(this.stl.Triangles[i, j, 0]);
-                        if (val > this.autoscale) this.autoscale = val;
-                        val = Math.Abs(this.stl.Triangles[i, j, 1]);
-                        if (val > this.autoscale) this.autoscale = val;
+                        progress.Cancel = true;
+                        this.file?.Close();
+                        this.file = null;
+                        this.stl = null;
                     }
                 }
-                if (this.autoscale == 0) this.autoscale = 1;
+                else // Odczyt binarny
+                {
+                    this.stl = new StlBinary();
+                    Progress progress = new Progress();
+                    Loading loading = new Loading(this.file.Name) { ShowInTaskbar = false, Owner = this.window };
+                    this.taskbar.ProgressState = TaskbarItemProgressState.Normal;
+                    progress.ProgressChanged += (sender, e) =>
+                    {
+                        loading.Set(e.Progress);
+                        Dispatcher.Invoke(() =>
+                        {
+                            if (e.Progress < 1)
+                                this.taskbar.ProgressValue = e.Progress;
+                            else
+                            {
+                                this.taskbar.ProgressState = TaskbarItemProgressState.None;
+                            }
+                        });
+                    };
+                    (this.stl as StlBinary).LoadAsync(this.file, progress);
+                    if (!(loading.ShowDialog() ?? false))
+                    {
+                        progress.Cancel = true;
+                        this.file?.Close();
+                        this.file = null;
+                        this.stl = null;
+                    }
+                }
+                this.x = this.y = this.rx = this.ry = 0f;
+                this.zoom = -4.0;
+
+                // Autoscaling calculation - search maximum Absolute(x) or Absolute(y)
+                if (this.stl == null || this.file == null || this.stl.Triangles.Length / 3 / 4 < 1) this.autoscale = 1;
                 else
-                    this.autoscale = 1 / this.autoscale;
+                {
+                    this.autoscale = 1;
+                    int length = this.stl.Triangles.Length / 4 / 3;
+                    for (int i = 0; i < length; i++)
+                    {
+                        for (int j = 1; j < 4; j++)
+                        {
+                            double val = Math.Abs(this.stl.Triangles[i, j, 0]);
+                            if (val > this.autoscale) this.autoscale = val;
+                            val = Math.Abs(this.stl.Triangles[i, j, 1]);
+                            if (val > this.autoscale) this.autoscale = val;
+                        }
+                    }
+                    if (this.autoscale == 0) this.autoscale = 1;
+                    else
+                        this.autoscale = 1 / this.autoscale;
+                }
+                this.taskbar.ProgressState = TaskbarItemProgressState.None;
+            }   
+            catch(StlFileException exc) 
+            {
+                MessageBox.Show(string.Format(FindResource("StlException_message").ToString(), exc.Message), "STL Viewer",MessageBoxButton.OK, MessageBoxImage.Warning);
+                this.file?.Close();
+                this.file = null;
+                this.stl = null;
             }
-            this.taskbar.ProgressState = TaskbarItemProgressState.None;
+            catch (IOException exc)
+            {
+                MessageBox.Show(string.Format(FindResource("IOException_message").ToString(), exc.GetType().Name, exc.Message), "STL Viewer", MessageBoxButton.OK, MessageBoxImage.Error);
+                this.file?.Close();
+                this.file = null;
+                this.stl = null;
+            }
+            catch(Exception exc)
+            {
+                MessageBox.Show(string.Format(FindResource("Exception_message").ToString(), exc.GetType().Name, exc.Message), "STL Viewer", MessageBoxButton.OK, MessageBoxImage.Error);
+                Application.Current.Shutdown(1);
+            }
         }
         #endregion
 

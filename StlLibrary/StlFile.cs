@@ -1,9 +1,5 @@
 ﻿using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
 using System.IO;
-using System.Threading.Tasks;
 
 namespace StlLibrary
 {
@@ -18,7 +14,7 @@ namespace StlLibrary
     }
 
     [Serializable]
-    public class StlFileException : ApplicationException
+    public class StlFileException : FileFormatException
     {
         public StlFileException() : base("StlFileException") { }
         public StlFileException(string message) : base("StlFileException: " + message) { }

@@ -2,12 +2,22 @@
                     xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
                     xmlns:local="clr-namespace:StlViewer.Properties"
                     xmlns:system="clr-namespace:System;assembly=mscorlib">
+    <!-- Main Window -->
     <system:String x:Key="FullscreenCheckbox">Fullscreen</system:String>
     <system:String x:Key="OpenButton">Open STL...</system:String>
     <system:String x:Key="ViewMode_BasicColor">Basic color</system:String>
     <system:String x:Key="ViewMode_Material">Material</system:String>
     <system:String x:Key="ViewMode_Mesh">Mesh</system:String>
+    <!-- Loading -->
     <system:String x:Key="Loading_Title">Loading</system:String>
     <system:String x:Key="Loading_text">Loading file: </system:String>
     <system:String x:Key="Loading_cancel">Cancel</system:String>
+    <!-- Messages -->
+    <system:String x:Key="FileReadError">File read error:\n\rType: {0}\n\rMessage: {1}</system:String>
+    <system:String x:Key="BadArgument">Invalid file specified in the first argument</system:String>
+    <system:String x:Key="FileCantRead">File cannot be read</system:String>
+    <system:String x:Key="ReadError">File read from disk error</system:String>
+    <system:String x:Key="StlException_message">STL structure error: {0}</system:String>
+    <system:String x:Key="IOException_message">File read error: {0}. {1}</system:String>
+    <system:String x:Key="Exception_message">An unexpected problem has occurred that prevents the application from normal working. {0}. {1}</system:String>
 </ResourceDictionary>

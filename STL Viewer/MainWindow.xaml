@@ -9,8 +9,7 @@
         x:Class="StlViewer.MainWindow"
         xmlns:res="clr-namespace:StlViewer.Properties"
         mc:Ignorable="d"
-        Language="{}"
-        Title="STL Viewer" Height="392" Width="525" Loaded="Window_Loaded" MouseMove="window_MouseMove" Closing="window_Closing">
+        Title="STL Viewer" Height="392" Width="525" Loaded="Window_Loaded" MouseMove="window_MouseMove" Closing="window_Closing" Icon="app.ico">
     <Window.TaskbarItemInfo>
         <TaskbarItemInfo x:Name="taskbar" />
     </Window.TaskbarItemInfo>

@@ -1,10 +1,7 @@
 ﻿using System;
-using System.Collections.Generic;
-using System.Linq;
+using System.IO;
 using System.Text;
 using System.Threading.Tasks;
-using System.IO;
-using System.Windows.Media.Media3D;
 
 namespace StlLibrary
 {
@@ -15,7 +12,7 @@ namespace StlLibrary
         public void Load(FileStream file)
         {
             if(file == null) throw new ArgumentNullException();
-            if (!file.CanRead || file.Length < 84) throw new ArgumentException("Nieprawidłowy format");
+            if (!file.CanRead || file.Length < 84) throw new ArgumentException("Invalid format");
 
             using (BinaryReader reader = new BinaryReader(file))
             {
@@ -23,7 +20,7 @@ namespace StlLibrary
                 byte[] str = reader.ReadBytes(80);
                 base.Header = Encoding.ASCII.GetString(str);
                 UInt32 length = reader.ReadUInt32();
-                if (length < 1) throw new ArgumentException("Wymagany przynajmniej jeden trójkąt");
+                if (length < 1) throw new ArgumentException("At least one triangle is required");
 
                 this.Triangles = new double[length,4,3];
                 for (uint i = 0; i < length; i++)
@@ -56,7 +53,7 @@ namespace StlLibrary
             return Task.Run(() =>
             {
                 if (file == null) throw new ArgumentNullException();
-                if (!file.CanRead || file.Length < 84) throw new ArgumentException("Nieprawidłowy format");
+                if (!file.CanRead || file.Length < 84) throw new ArgumentException("Invalid format");
 
                 using (BinaryReader reader = new BinaryReader(file))
                 {
@@ -64,7 +61,7 @@ namespace StlLibrary
                     byte[] str = reader.ReadBytes(80);
                     base.Header = Encoding.ASCII.GetString(str);
                     UInt32 length = reader.ReadUInt32();
-                    if (length < 1) throw new ArgumentException("Wymagany przynajmniej jeden trójkąt");
+                    if (length < 1) throw new ArgumentException("At least one triangle is required");
 
                     progressinfo.SetCount(length);
                     this.Triangles = new double[length, 4, 3];

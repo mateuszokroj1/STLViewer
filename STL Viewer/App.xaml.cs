@@ -19,84 +19,103 @@ namespace StlViewer
     {
         private void Application_Startup(object sender, StartupEventArgs e)
         {
-            CultureInfo culture;
-            string appdata = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData), "STL Viewer");
-            dynamic settings = new { lang = "" };
-            bool valid = false;
-            if (File.Exists(Path.Combine(appdata, "settings.json")))
+            try
             {
-                using(var file = File.OpenText(Path.Combine(appdata, "settings.json")))
+                Splash splash = new Splash();
+                splash.Show();
+                CultureInfo culture;
+                string appdata = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData), "STL Viewer");
+                dynamic settings = new { lang = "" };
+                bool valid = false;
+                if (File.Exists(Path.Combine(appdata, "settings.json")))
                 {
-                    string json = file.ReadToEnd();
-                    JObject job;
-                    try { job = JObject.Parse(json); }
-                    catch(JsonReaderException) { job = null; }
-                    
-                    if (job != null)
+                    using (var file = File.OpenText(Path.Combine(appdata, "settings.json")))
                     {
-                        JSchema schema = JSchema.Parse(@"{  '$schema': 'http://json-schema.org/draft-04/schema', 'title': 'STL Viewer Settings JSON Schema',  'type': 'object',  'required': ['lang'],  'properties': {    'lang': { 'type': 'string',      'description': 'Language of the UI',      'pattern': '^([A-z]{2})(-[A-z]{2})?$'    }  }}");
-                        valid = job.IsValid(schema);
+                        string json = file.ReadToEnd();
+                        JObject job;
+                        try { job = JObject.Parse(json); }
+                        catch (JsonReaderException) { job = null; }
+
+                        if (job != null)
+                        {
+                            JSchema schema = JSchema.Parse(@"{  '$schema': 'http://json-schema.org/draft-04/schema', 'title': 'STL Viewer Settings JSON Schema',  'type': 'object',  'required': ['lang'],  'properties': {    'lang': { 'type': 'string',      'description': 'Language of the UI',      'pattern': '^([A-z]{2})(-[A-z]{2})?$'    }  }}");
+                            valid = job.IsValid(schema);
+                        }
+                        settings = JsonConvert.DeserializeObject(json);
                     }
-                    settings = JsonConvert.DeserializeObject(json);
+                    if (!valid)
+                    {
+                        settings = new { lang = CultureInfo.InstalledUICulture.Name };
+                        using (FileStream file = new FileStream(Path.Combine(appdata, "settings.json"), FileMode.Open, FileAccess.Write, FileShare.None))
+                        {
+                            file.SetLength(0);
+                            byte[] utf8 = Encoding.UTF8.GetBytes(JsonConvert.SerializeObject(settings));
+                            file.Write(utf8, 0, utf8.Length);
+                            file.Flush();
+                        }
+                    }
+                    culture = new CultureInfo(settings.lang.ToString());
                 }
-                if (!valid)
+                else
                 {
                     settings = new { lang = CultureInfo.InstalledUICulture.Name };
-                    using (FileStream file = new FileStream(Path.Combine(appdata, "settings.json"), FileMode.Open, FileAccess.Write, FileShare.None))
+                    string json = JsonConvert.SerializeObject(settings);
+                    if (!Directory.Exists(appdata))
+                        Directory.CreateDirectory(appdata);
+                    using (var file = File.CreateText(Path.Combine(appdata, "settings.json")))
                     {
-                        file.SetLength(0);
-                        byte[] utf8 = Encoding.UTF8.GetBytes(JsonConvert.SerializeObject(settings));
-                        file.Write(utf8, 0, utf8.Length);
+                        file.Write(json);
                         file.Flush();
                     }
+                    culture = CultureInfo.InstalledUICulture;
                 }
-                culture = new CultureInfo(settings.lang.ToString());
-            }
-            else
-            {
-                settings = new { lang = CultureInfo.InstalledUICulture.Name };
-                string json = JsonConvert.SerializeObject(settings);
-                if (!Directory.Exists(appdata))
-                    Directory.CreateDirectory(appdata);
-                using (var file = File.CreateText(Path.Combine(appdata, "settings.json")))
+                Thread.CurrentThread.CurrentUICulture = culture;
+                switch (culture.TwoLetterISOLanguageName)
                 {
-                    file.Write(json);
-                    file.Flush();
+                    case "pl":
+                        Resources.MergedDictionaries.Add(new ResourceDictionary() { Source = new Uri(@"Properties\Resources.pl.xaml", UriKind.Relative) });
+                        break;
+                    case "en":
+                    default:
+                        Resources.MergedDictionaries.Add(new ResourceDictionary() { Source = new Uri(@"Properties\Resources.xaml", UriKind.Relative) });
+                        break;
                 }
-                culture = CultureInfo.InstalledUICulture;
-            }
-            Thread.CurrentThread.CurrentUICulture = culture;
-            switch(culture.TwoLetterISOLanguageName)
-            {
-                case "pl":
-                    Resources.MergedDictionaries.Add(new ResourceDictionary() { Source = new Uri(@"Properties\Resources.pl.xaml", UriKind.Relative) });
-                    break;
-                case "en":
-                default:
-                    Resources.MergedDictionaries.Add(new ResourceDictionary() { Source = new Uri(@"Properties\Resources.xaml", UriKind.Relative) });
-                    break;
-            }
-            MainWindow window = null;
-            if (e.Args.Length == 0)
-                window = new MainWindow();
-            else if(File.Exists(e.Args[0]))
-            {
-                FileStream file = null;
-                try { file = new FileStream(e.Args[0], FileMode.Open, FileAccess.Read, FileShare.Read); }
-                catch(IOException exc)
+
+                MainWindow window = null;
+                if (e.Args.Length == 0)
+                    window = new MainWindow();
+                else if (File.Exists(e.Args[0]))
                 {
-                    Type t = exc.GetType();
-                    MessageBox.Show($"Błąd odczytu pliku:\n\rType: {t.FullName}\n\rMessage: {exc.Message}","STL Viewer", MessageBoxButton.OK, MessageBoxImage.Error);
+                    FileStream file = null;
+                    try { file = new FileStream(e.Args[0], FileMode.Open, FileAccess.Read, FileShare.Read); }
+                    catch (IOException exc)
+                    {
+                        Type t = exc.GetType();
+                        MessageBox.Show(string.Format(FindResource("FileReadError").ToString(), t.FullName, exc.Message), "STL Viewer", MessageBoxButton.OK, MessageBoxImage.Error);
+                        window = new MainWindow();
+                    }
+                    if (file != null) window = new MainWindow(file);
+                }
+                else
+                {
+                    MessageBox.Show(FindResource("BadArgument").ToString(), "STL Viewer", MessageBoxButton.OK, MessageBoxImage.Warning);
                     window = new MainWindow();
                 }
-                if (file != null) window = new MainWindow(file);
+                Thread.Sleep(3000);
+                window.Show();
+                splash.Close();
             }
-            else
+            catch(Exception exc)
             {
-                MessageBox.Show("Nieprawidłowy plik podany w pierwszym argumencie","STL Viewer", MessageBoxButton.OK, MessageBoxImage.Warning);
-                window = new MainWindow();
+                MessageBox.Show(string.Format(FindResource("Exception_message").ToString(), exc.GetType().Name, exc.Message), "STL Viewer", MessageBoxButton.OK, MessageBoxImage.Error);
+                Shutdown(1);
             }
-            window.Show();
+        }
+
+        private void Application_DispatcherUnhandledException(object sender, System.Windows.Threading.DispatcherUnhandledExceptionEventArgs e)
+        {
+            MessageBox.Show(string.Format(FindResource("Exception_message").ToString(), e.Exception.GetType().Name, e.Exception.Message), "STL Viewer", MessageBoxButton.OK, MessageBoxImage.Error);
+            Shutdown(1);
         }
     }
 }

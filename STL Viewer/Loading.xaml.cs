@@ -22,7 +22,7 @@ namespace StlViewer
         public Loading(string filename)
         {
             InitializeComponent();
-            this.text.Text = FindResource("Loading_text") as string + filename;
+            this.text.Text = FindResource("Loading_text") as string +" "+ filename;
         }
 
         public void Set(double value)
